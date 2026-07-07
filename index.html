@@ -2477,30 +2477,30 @@ window.openTaskDetail = function(id) {
     <div style="margin-top:16px">
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">📝 Histori Edit</div>
       ${[...t.editHistory].reverse().map(h => {
-        const judulChanged = h.prevJudul !== h.newJudul;
-        const detailChanged = h.prevDetail !== h.newDetail;
-        const judulHTML = judulChanged ? `
-          <div style="margin-top:6px;font-size:12px">
-            <span style="color:var(--muted)">Judul:</span><br>
-            <span style="color:#e74c3c;text-decoration:line-through">${escHtml(h.prevJudul || '—')}</span>
+        const priorityLabel = { urgent:'🔴 Mendesak', important:'🟡 Penting', normal:'🔵 Normal' };
+        const repeatLabel = { none:'Tidak berulang', daily:'Setiap hari', weekly:'Setiap minggu', monthly:'Setiap bulan', '3days':'Setiap 3 hari', '7days':'Setiap 7 hari', '14days':'Setiap 2 minggu' };
+        const diffRow = (label, prev, next) => prev !== next ? `
+          <div style="margin-top:5px;font-size:12px">
+            <span style="color:var(--muted)">${label}:</span>
+            <span style="color:#e74c3c;text-decoration:line-through;margin-left:4px">${escHtml(prev || '—')}</span>
             <span style="color:var(--muted)"> → </span>
-            <span style="color:#4caf50">${escHtml(h.newJudul || '—')}</span>
+            <span style="color:#4caf50">${escHtml(next || '—')}</span>
           </div>` : '';
-        const detailHTML = detailChanged ? `
-          <div style="margin-top:4px;font-size:12px">
-            <span style="color:var(--muted)">Catatan:</span><br>
-            <span style="color:#e74c3c;text-decoration:line-through">${escHtml(h.prevDetail || '—')}</span>
-            <span style="color:var(--muted)"> → </span>
-            <span style="color:#4caf50">${escHtml(h.newDetail || '—')}</span>
-          </div>` : '';
-        const noChange = !judulChanged && !detailChanged;
+        const rows = [
+          diffRow('Judul', h.prevJudul, h.newJudul),
+          diffRow('Catatan', h.prevDetail, h.newDetail),
+          diffRow('Prioritas', priorityLabel[h.prevPriority] || h.prevPriority, priorityLabel[h.newPriority] || h.newPriority),
+          diffRow('Kategori', h.prevKategori, h.newKategori),
+          diffRow('Ditugaskan ke', h.prevAssignToName || 'Semua', h.newAssignToName || 'Semua'),
+          diffRow('Pengulangan', repeatLabel[h.prevRepeat] || h.prevRepeat, repeatLabel[h.newRepeat] || h.newRepeat),
+          h.prevReminderTime !== h.newReminderTime && h.prevReminderTime && h.newReminderTime ? diffRow('Waktu', new Date(h.prevReminderTime).toLocaleString('id-ID'), new Date(h.newReminderTime).toLocaleString('id-ID')) : ''
+        ].filter(Boolean).join('');
         return `<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--accent)">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div style="font-size:13px;font-weight:600;color:var(--text)">✏️ ${escHtml(h.byName)}</div>
             <div style="font-size:11px;color:var(--muted)">${h.at ? new Date(h.at).toLocaleString('id-ID') : '-'}</div>
           </div>
-          ${judulHTML}${detailHTML}
-          ${noChange ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">Field lain diperbarui (prioritas/waktu/assign)</div>` : ''}
+          ${rows || '<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">Tidak ada perubahan terdeteksi</div>'}
         </div>`;
       }).join('')}
     </div>` : '';
@@ -2593,14 +2593,22 @@ window.saveEdit = async function() {
     const prevTask = tasks.find(t => t.id === editTaskId);
     const newJudul = judul;
     const newDetail = document.getElementById('edit-detail').value.trim();
+    const newPriority = document.getElementById('edit-priority').value;
+    const newKategori = document.getElementById('edit-kategori').value.trim();
+    const newRepeat = document.getElementById('edit-repeat').value;
+    const newReminderTime = new Date(timeVal).toISOString();
     const histEntry = {
       by: currentUser.uid,
       byName: currentUser.displayName || userProfile?.name || 'User',
       at: new Date().toISOString(),
-      prevJudul: prevTask?.judul || '',
-      prevDetail: prevTask?.detail || '',
-      newJudul,
-      newDetail
+      prevJudul: prevTask?.judul || '',        newJudul,
+      prevDetail: prevTask?.detail || '',      newDetail,
+      prevPriority: prevTask?.priority || '',  newPriority,
+      prevKategori: prevTask?.kategori || '',  newKategori,
+      prevRepeat: prevTask?.repeat || 'none',  newRepeat,
+      prevAssignTo: prevTask?.assignTo || 'semua',        newAssignTo: assignVal,
+      prevAssignToName: prevTask?.assignToName || 'Semua', newAssignToName: assignName,
+      prevReminderTime: prevTask?.reminderTime || '',      newReminderTime
     };
     await updateDoc(doc(db, 'families', familyData.id, 'tasks', editTaskId), {
       judul,
