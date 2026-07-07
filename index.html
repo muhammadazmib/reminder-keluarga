@@ -708,6 +708,7 @@
 
 <!-- PIN SCREEN -->
 <div class="pin-screen" id="screen-pin" style="display:none">
+  <button id="pin-back-btn" onclick="closePinSetup()" style="display:none;position:absolute;top:20px;right:20px;background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
   <div style="font-size:48px">🔐</div>
   <div style="font-size:20px;font-weight:800;color:var(--accent);margin-top:12px" id="pin-title">Masukkan PIN</div>
   <div style="font-size:13px;color:var(--muted);margin-top:4px" id="pin-sub">4 digit PIN kamu</div>
@@ -3262,8 +3263,14 @@ window.openPinSetup = function() {
   updatePinDots();
   document.getElementById('pin-title').textContent = existing ? 'Ganti PIN' : 'Buat PIN Baru';
   document.getElementById('pin-sub').textContent = 'Masukkan 4 digit PIN';
+  document.getElementById('pin-back-btn').style.display = 'block';
   window._afterPin = 'app';
   showScreen('pin');
+};
+
+window.closePinSetup = function() {
+  document.getElementById('pin-back-btn').style.display = 'none';
+  showScreen('app');
 };
 
 window.pinLogout = function() {
@@ -3279,6 +3286,7 @@ function showScreen(name) {
   document.getElementById('screen-pin').style.display = name === 'pin' ? 'flex' : 'none';
   document.getElementById('screen-app').style.display = name === 'app' ? 'block' : 'none';
   document.getElementById('fab-btn').style.display = name === 'app' ? 'flex' : 'none';
+  document.getElementById('fab-voice').style.display = name === 'app' ? 'flex' : 'none';
 }
 
 function setDefaultTime() {
