@@ -2613,7 +2613,7 @@ function renderDashboard() {
   const greeting = hour < 12 ? 'Selamat Pagi' : hour < 17 ? 'Selamat Siang' : 'Selamat Malam';
   const name = currentUser?.displayName || userProfile?.name || 'Kamu';
   document.getElementById('dash-greeting-text').textContent = `${greeting}, ${name}! 👋`;
-  document.getElementById('dash-greeting-sub').textContent = `${new Date().toLocaleDateString('id-ID', {weekday:'long',day:'numeric',month:'long'})}`;
+  document.getElementById('dash-greeting-sub').textContent = `${new Date().toLocaleDateString('id-ID', {weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
   document.getElementById('dash-stat-today').textContent = todayTasks.length;
   document.getElementById('dash-stat-urgent').textContent = urgent.length;
   document.getElementById('dash-stat-done-week').textContent = doneThisWeek.length;
