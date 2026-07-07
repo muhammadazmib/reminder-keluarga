@@ -995,19 +995,39 @@
 </div>
 
 <!-- FAMILY SHEET -->
-<div class="sheet-overlay" id="family-sheet" onclick="closeFamilySheet(event)">
+<!-- SHARE SHEET -->
+<div class="sheet-overlay" id="share-sheet" onclick="closeShareSheet(event)">
   <div class="bottom-sheet">
-    <div class="sheet-title">👨‍👩‍👧 Info Keluarga</div>
-    <div class="code-display">
-      <div class="code" id="display-family-code">—</div>
-      <p>Bagikan kode ini ke pasangan agar bisa bergabung</p>
+    <div class="sheet-title">🤝 Berbagi dengan Keluarga</div>
+
+    <!-- Anggota aktif -->
+    <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Anggota saat ini</div>
+    <div class="member-list" id="member-list" style="margin-bottom:16px"></div>
+
+    <!-- Undang via kode -->
+    <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Bagikan kode ini untuk mengundang anggota</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:20px;font-weight:900;letter-spacing:3px;color:var(--accent);flex:1" id="display-family-code">—</div>
+        <button onclick="copyFamilyCode()" style="background:var(--accent);color:#0f0f1a;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer">📋 Salin</button>
+      </div>
     </div>
-    <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Anggota</div>
-    <div class="member-list" id="member-list"></div>
-    <button class="btn btn-primary" onclick="copyFamilyCode()" style="margin-top:8px">📋 Salin Kode</button>
-    <button class="snooze-cancel" style="margin-top:8px" onclick="closeFamilySheet()">Tutup</button>
+
+    <!-- Gabung dengan kode -->
+    <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Atau masukkan kode dari orang lain</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="inp-join-code-sheet" placeholder="Kode keluarga..." style="flex:1;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;text-transform:uppercase;letter-spacing:2px">
+        <button onclick="joinFromSheet()" style="background:var(--accent);color:#0f0f1a;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer">Gabung</button>
+      </div>
+    </div>
+
+    <button class="snooze-cancel" onclick="closeShareSheet()">Tutup</button>
   </div>
 </div>
+
+<!-- (legacy kept for copyFamilyCode ref) -->
+<div id="family-sheet" style="display:none"><div id="dummy-fc"></div></div>
 
 <!-- REMINDER MODAL -->
 <div class="reminder-overlay" id="reminder-overlay">
@@ -1114,12 +1134,12 @@
         <span class="setting-arrow">›</span>
       </div>
 
-      <!-- Keluarga -->
-      <div class="setting-row" onclick="openFamilySheet();closeSettings()">
-        <span class="setting-icon">👨‍👩‍👧</span>
+      <!-- Berbagi -->
+      <div class="setting-row" onclick="openShareSheet();closeSettings()">
+        <span class="setting-icon">🤝</span>
         <div class="setting-info">
-          <div class="setting-label">Info Keluarga</div>
-          <div class="setting-desc" id="setting-family-code">Kode: —</div>
+          <div class="setting-label">Berbagi dengan Keluarga</div>
+          <div class="setting-desc" id="setting-member-count">Hanya kamu · Tap untuk undang</div>
         </div>
         <span class="setting-arrow">›</span>
       </div>
@@ -1300,13 +1320,34 @@ async function loadUserProfile() {
       if (userProfile.familyId) {
         await loadFamily();
       } else {
-        showScreen('family');
+        await createSoloWorkspace();
       }
     } else {
-      showScreen('family');
+      // Pengguna baru — buat profil + solo workspace otomatis
+      userProfile = { name: currentUser.displayName || 'User', email: currentUser.email || '' };
+      await setDoc(doc(db, 'users', currentUser.uid), userProfile);
+      await createSoloWorkspace();
     }
   } catch (e) {
     showToast('Error memuat profil: ' + e.message, 'danger');
+    showScreen('auth');
+  }
+}
+
+async function createSoloWorkspace() {
+  try {
+    const ref = await addDoc(collection(db, 'families'), {
+      code: 'SOLO-' + currentUser.uid.slice(0,6).toUpperCase(),
+      solo: true,
+      createdBy: currentUser.uid,
+      createdAt: serverTimestamp(),
+      members: [{ uid: currentUser.uid, name: currentUser.displayName || userProfile?.name || 'User', email: currentUser.email || '' }]
+    });
+    await setDoc(doc(db, 'users', currentUser.uid), { familyId: ref.id }, { merge: true });
+    userProfile = { ...userProfile, familyId: ref.id };
+    await loadFamily();
+  } catch (e) {
+    showToast('Gagal setup akun: ' + e.message, 'danger');
     showScreen('auth');
   }
 }
@@ -1336,20 +1377,24 @@ async function loadFamily() {
       familyData = { id: snap.id, ...snap.data() };
       checkPinOnLoad('app');
     } else {
-      showToast('Data keluarga tidak ditemukan, silakan buat/gabung ulang', 'danger');
-      showScreen('family');
+      // Family doc hilang — buat ulang solo workspace
+      userProfile.familyId = null;
+      await createSoloWorkspace();
     }
   } catch (e) {
     showToast('Error: ' + e.message, 'danger');
-    // Jangan redirect ke family, coba retry sekali
+    // Retry sekali sebelum menyerah
     setTimeout(async () => {
       try {
         const snap2 = await getDoc(doc(db, 'families', userProfile.familyId));
         if (snap2.exists()) {
           familyData = { id: snap2.id, ...snap2.data() };
           checkPinOnLoad('app');
-        } else { showScreen('family'); }
-      } catch(e2) { showScreen('family'); }
+        } else {
+          userProfile.familyId = null;
+          await createSoloWorkspace();
+        }
+      } catch(e2) { showScreen('auth'); }
     }, 2000);
   }
 }
@@ -2224,12 +2269,15 @@ window.showNotifDebug = async function() {
 // ===================== FAMILY SHEET =====================
 // ===================== SETTINGS SHEET =====================
 window.openSettings = function() {
-  // Update status di settings
   const pin = localStorage.getItem('app_pin_' + currentUser?.uid);
-  document.getElementById('setting-pin-status').textContent = pin ? 'Sudah diset ✅' : 'Belum diset';
+  setEl('setting-pin-status', pin ? 'Sudah diset ✅' : 'Belum diset');
   const bio = localStorage.getItem('bio_cred_' + currentUser?.uid);
-  document.getElementById('setting-bio-status').textContent = bio ? 'Sudah didaftarkan ✅' : 'Belum didaftarkan';
-  document.getElementById('setting-family-code').textContent = 'Kode: ' + (familyData?.code || '—');
+  setEl('setting-bio-status', bio ? 'Sudah didaftarkan ✅' : 'Belum didaftarkan');
+  const members = familyData?.members || [];
+  const isSolo = familyData?.solo || members.length <= 1;
+  setEl('setting-member-count', isSolo
+    ? 'Hanya kamu · Tap untuk undang'
+    : `${members.length} anggota · ${familyData?.code || ''}`);
   document.getElementById('settings-sheet').classList.add('show');
 };
 window.closeSettings = function(e) {
@@ -2237,22 +2285,46 @@ window.closeSettings = function(e) {
   document.getElementById('settings-sheet').classList.remove('show');
 };
 
-window.openFamilySheet = function() {
-  // Refresh code dari familyData terbaru
-  const code = familyData?.code || '—';
-  document.getElementById('display-family-code').textContent = code;
-  document.getElementById('setting-family-code').textContent = 'Kode: ' + code;
-  document.getElementById('family-sheet').classList.add('show');
+window.openShareSheet = function() {
+  const members = familyData?.members || [];
+  const count = members.length;
+  setEl('display-family-code', familyData?.code || '—');
+  renderMemberList();
+  document.getElementById('share-sheet').classList.add('show');
 };
-window.closeFamilySheet = function(e) {
-  if (e && e.target !== document.getElementById('family-sheet')) return;
-  document.getElementById('family-sheet').classList.remove('show');
+window.closeShareSheet = function(e) {
+  if (e && e.target !== document.getElementById('share-sheet')) return;
+  document.getElementById('share-sheet').classList.remove('show');
 };
 window.copyFamilyCode = function() {
   const code = familyData?.code || '';
   navigator.clipboard.writeText(code).then(() => showToast('📋 Kode disalin: ' + code));
-  document.getElementById('family-sheet').classList.remove('show');
 };
+window.joinFromSheet = async function() {
+  const code = document.getElementById('inp-join-code-sheet').value.trim().toUpperCase();
+  if (!code) { showToast('Masukkan kode terlebih dahulu', 'danger'); return; }
+  try {
+    const q = query(collection(db, 'families'), where('code', '==', code));
+    const snap = await getDocs(q);
+    if (snap.empty) { showToast('Kode tidak ditemukan', 'danger'); return; }
+    const famDoc = snap.docs[0];
+    const famData = famDoc.data();
+    const already = famData.members?.some(m => m.uid === currentUser.uid);
+    if (!already) {
+      await updateDoc(doc(db, 'families', famDoc.id), {
+        members: [...(famData.members || []), { uid: currentUser.uid, name: userProfile?.name || currentUser.displayName || 'User', email: currentUser.email || '' }]
+      });
+    }
+    await setDoc(doc(db, 'users', currentUser.uid), { familyId: famDoc.id }, { merge: true });
+    userProfile = { ...userProfile, familyId: famDoc.id };
+    await loadFamily();
+    document.getElementById('share-sheet').classList.remove('show');
+    showToast('✅ Berhasil bergabung!');
+  } catch(e) { showToast('Gagal: ' + e.message, 'danger'); }
+};
+// legacy compat
+window.openFamilySheet = window.openShareSheet;
+window.closeFamilySheet = window.closeShareSheet;
 
 // ===================== EDIT TUGAS =====================
 let editTaskId = null;
