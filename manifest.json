@@ -1,7 +1,7 @@
 {
   "name": "Kitask",
   "short_name": "Kitask",
-  "description": "Catat. Ingat. Selesai.",
+  "description": "Tidak Ada yang Terlewat.",
   "start_url": "/reminder-keluarga/",
   "scope": "/reminder-keluarga/",
   "display": "standalone",
