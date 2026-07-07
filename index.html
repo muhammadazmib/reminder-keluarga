@@ -365,6 +365,18 @@
   .empty-sub { font-size: 13px; }
   .fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 20px rgba(226,168,50,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; transition: transform 0.15s; }
   .fab:active { transform: scale(0.92); }
+  .fab-voice { position: fixed; bottom: 24px; right: 84px; width: 52px; height: 52px; border-radius: 50%; background: var(--card); border: 2px solid var(--border); font-size: 22px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 200; transition: all 0.2s; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  .fab-voice.recording { background: var(--danger); border-color: var(--danger); animation: pulseRec 1s infinite; }
+  @keyframes pulseRec { 0%,100% { box-shadow: 0 0 0 0 rgba(226,85,85,0.5); } 50% { box-shadow: 0 0 0 12px rgba(226,85,85,0); } }
+  .mic-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); padding: 8px 12px; font-size: 16px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+  .mic-btn.recording { background: var(--danger); border-color: var(--danger); color: white; animation: pulseRec 1s infinite; }
+  .voice-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 900; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
+  .voice-modal.show { display: flex; }
+  .voice-wave { font-size: 64px; animation: pulseRec 1s infinite; }
+  .voice-text { font-size: 16px; color: var(--text); text-align: center; max-width: 300px; min-height: 60px; padding: 16px; background: var(--card); border-radius: 14px; border: 1px solid var(--border); }
+  .voice-hint { font-size: 12px; color: var(--muted); }
+  .voice-actions { display: flex; gap: 10px; }
+  .voice-actions button { padding: 12px 24px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
   .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--success); color: #0f0f1a; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 999; pointer-events: none; white-space: nowrap; max-width: 90vw; text-align: center; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .loading-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
@@ -785,7 +797,10 @@
     <div class="form-card">
       <h2>📝 Tugas Baru</h2>
       <label>Judul Tugas / Perintah *</label>
-      <input type="text" id="inp-judul" placeholder="Contoh: Beli susu, bayar listrik..." maxlength="100">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="inp-judul" placeholder="Ketik atau tap 🎤 untuk bicara..." maxlength="100" style="flex:1">
+        <button class="mic-btn" id="mic-btn-form" onclick="startVoice('form')" title="Input suara">🎤</button>
+      </div>
       <label>Detail / Catatan</label>
       <textarea id="inp-detail" placeholder="Tambah detail, instruksi, atau konteks..."></textarea>
       <label>Ditugaskan kepada</label>
@@ -999,6 +1014,21 @@
   <div class="photo-viewer-close" onclick="closePhotoViewer()">✕</div>
   <img id="photo-viewer-img" src="" alt="">
   <div class="photo-viewer-caption" id="photo-viewer-caption"></div>
+</div>
+
+<!-- FAB VOICE -->
+<button class="fab-voice" id="fab-voice" onclick="startVoice('fab')" title="Tambah tugas dengan suara">🎤</button>
+
+<!-- VOICE MODAL -->
+<div class="voice-modal" id="voice-modal">
+  <div class="voice-wave">🎙️</div>
+  <div style="font-size:14px;font-weight:700;color:var(--accent)">Bicara sekarang...</div>
+  <div class="voice-text" id="voice-text">Mendengarkan...</div>
+  <div class="voice-hint">Contoh: "Beli susu besok siang" atau "Bayar listrik hari ini"</div>
+  <div class="voice-actions">
+    <button onclick="confirmVoice()" style="background:var(--success);color:#0f0f1a">✅ Simpan</button>
+    <button onclick="cancelVoice()" style="background:var(--card);color:var(--muted);border:1px solid var(--border)">✕ Batal</button>
+  </div>
 </div>
 
 <!-- FAB -->
@@ -1253,6 +1283,7 @@ function initApp() {
   listenNotifications();
   startReminderCheck();
   document.getElementById('fab-btn').style.display = 'flex';
+  document.getElementById('fab-voice').style.display = 'flex';
   checkNotifPermission();
   initTheme();
   initOneSignal(currentUser.uid);
@@ -2200,6 +2231,91 @@ window.setFilter = function(filter, btn) {
 };
 
 window.fabTap = function() { switchTab('tambah'); document.getElementById('inp-judul').focus(); };
+
+// ===================== VOICE INPUT =====================
+let recognition = null;
+let voiceMode = 'form'; // 'form' | 'fab'
+let voiceFinal = '';
+
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  const r = new SpeechRecognition();
+  r.lang = 'id-ID';
+  r.continuous = false;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+  return r;
+}
+
+window.startVoice = function(mode) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Browser tidak mendukung input suara', 'danger'); return;
+  }
+  voiceMode = mode;
+  voiceFinal = '';
+  recognition = initSpeechRecognition();
+
+  recognition.onstart = () => {
+    if (mode === 'fab') {
+      document.getElementById('voice-modal').classList.add('show');
+      document.getElementById('voice-text').textContent = 'Mendengarkan...';
+    } else {
+      document.getElementById('mic-btn-form').classList.add('recording');
+      document.getElementById('mic-btn-form').textContent = '⏹️';
+    }
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) voiceFinal += t;
+      else interim = t;
+    }
+    const display = voiceFinal + interim;
+    if (mode === 'fab') {
+      document.getElementById('voice-text').textContent = display || 'Mendengarkan...';
+    } else {
+      document.getElementById('inp-judul').value = display;
+    }
+  };
+
+  recognition.onerror = (e) => {
+    showToast('Error: ' + e.error, 'danger');
+    cancelVoice();
+  };
+
+  recognition.onend = () => {
+    if (mode === 'form') {
+      document.getElementById('mic-btn-form').classList.remove('recording');
+      document.getElementById('mic-btn-form').textContent = '🎤';
+      if (voiceFinal) document.getElementById('inp-judul').value = voiceFinal;
+    }
+    // fab mode: tunggu user tap Simpan/Batal
+  };
+
+  recognition.start();
+};
+
+window.confirmVoice = function() {
+  const text = document.getElementById('voice-text').textContent;
+  if (text && text !== 'Mendengarkan...') {
+    switchTab('tambah');
+    document.getElementById('inp-judul').value = text;
+    document.getElementById('inp-judul').focus();
+    showToast('✅ Teks suara dimasukkan!');
+  }
+  cancelVoice();
+};
+
+window.cancelVoice = function() {
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  document.getElementById('voice-modal').classList.remove('show');
+  document.getElementById('mic-btn-form').classList.remove('recording');
+  document.getElementById('mic-btn-form').textContent = '🎤';
+};
 
 // ===================== DARK/LIGHT THEME =====================
 window.toggleTheme = function() {
