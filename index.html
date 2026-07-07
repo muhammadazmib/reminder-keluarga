@@ -270,7 +270,20 @@
     width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
   }
 
-  .task-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .task-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .task-actions-main { display: flex; gap: 8px; }
+  .task-actions-main .btn { flex: 1; text-align: center; }
+  .task-actions-icons { display: flex; gap: 6px; }
+  .btn-icon {
+    flex: 1; padding: 8px 4px; border-radius: 8px; font-size: 16px;
+    cursor: pointer; border: 1px solid var(--border); background: var(--card);
+    color: var(--muted); transition: all 0.15s; text-align: center;
+  }
+  .btn-icon:active { transform: scale(0.93); }
+  .btn-icon.edit { border-color: rgba(85,136,204,0.4); color: #5588cc; background: rgba(85,136,204,0.1); }
+  .btn-icon.comment { border-color: rgba(85,136,204,0.3); color: #5588cc; background: rgba(85,136,204,0.08); }
+  .btn-icon.snooze { border-color: rgba(226,168,50,0.3); color: var(--accent); background: rgba(226,168,50,0.08); }
+  .btn-icon.danger { border-color: rgba(226,85,85,0.3); color: var(--danger); background: rgba(226,85,85,0.08); }
 
   /* ===== STATS ===== */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -1566,12 +1579,16 @@ function taskCardHTML(t, isDone) {
     ${checklistHTML}
     ${t.photos && t.photos.length > 0 ? `<div class="task-photos">${t.photos.map((url,i) => `<div class="task-photo-thumb" onclick="openPhotoViewer('${url}','${escHtml(t.judul)}')"><img src="${url}" alt="foto ${i+1}" loading="lazy"></div>`).join('')}</div>` : ''}
     <div class="task-actions">
-      ${!isDone ? `<button class="btn btn-success" onclick="selesaikan('${t.id}')">✅ Selesai</button>` : ''}
-      ${!isDone ? `<button class="btn-snooze" onclick="openSnooze('${t.id}')">💤 Tunda</button>` : ''}
-      ${isDone ? `<button class="btn btn-outline" onclick="batalSelesai('${t.id}')">↩️ Aktifkan</button>` : ''}
-      ${!isDone ? `<button class="btn btn-edit" onclick="openEdit('${t.id}')">✏️ Edit</button>` : ''}
-      <button class="btn-comment" onclick="openComments('${t.id}')">💬</button>
-      <button class="btn btn-danger" onclick="hapus('${t.id}')">🗑️ Hapus</button>
+      <div class="task-actions-main">
+        ${!isDone ? `<button class="btn btn-success" onclick="selesaikan('${t.id}')">✅ Selesai</button>` : ''}
+        ${isDone ? `<button class="btn btn-outline" onclick="batalSelesai('${t.id}')">↩️ Aktifkan</button>` : ''}
+      </div>
+      <div class="task-actions-icons">
+        ${!isDone ? `<button class="btn-icon snooze" onclick="openSnooze('${t.id}')" title="Tunda">💤</button>` : ''}
+        ${!isDone ? `<button class="btn-icon edit" onclick="openEdit('${t.id}')" title="Edit">✏️</button>` : ''}
+        <button class="btn-icon comment" onclick="openComments('${t.id}')" title="Komentar">💬</button>
+        <button class="btn-icon danger" onclick="hapus('${t.id}')" title="Hapus">🗑️</button>
+      </div>
     </div>
   </div>`;
 }
