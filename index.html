@@ -854,6 +854,7 @@
 
       <label>Sub-task / Checklist <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label>
       <div class="checklist-input-row">
+        <button class="mic-btn" id="mic-btn-check" onclick="startVoice('checklist')" title="Rekam suara">🎤</button>
         <input type="text" id="inp-checklist" placeholder="Tambah langkah..." maxlength="100" onkeydown="if(event.key==='Enter'){tambahCheckItem();event.preventDefault()}">
         <button class="btn-add-check" onclick="tambahCheckItem()">+</button>
       </div>
@@ -918,7 +919,8 @@
     </div>
     <div class="comment-list" id="comment-list"></div>
     <div class="comment-input-row">
-      <input type="text" id="inp-comment" placeholder="Tulis komentar..." maxlength="300"
+      <button class="mic-btn" id="mic-btn-comment" onclick="startVoice('comment')" title="Rekam suara">🎤</button>
+      <input type="text" id="inp-comment" placeholder="Tulis atau rekam komentar..." maxlength="300"
         onkeydown="if(event.key==='Enter') sendComment()">
       <button class="btn-send" onclick="sendComment()">➤</button>
     </div>
@@ -1049,7 +1051,7 @@
       </div>
 
       <!-- Face ID -->
-      <div class="setting-row" onclick="setupBiometric()">
+      <div class="setting-row" onclick="closeSettings();setTimeout(setupBiometric,300)">
         <span class="setting-icon">👤</span>
         <div class="setting-info">
           <div class="setting-label">Face ID / Sidik Jari</div>
@@ -2364,10 +2366,17 @@ window.startVoice = function(mode) {
       document.getElementById('voice-modal').classList.add('show');
       document.getElementById('voice-text').textContent = 'Mendengarkan...';
     } else {
-      document.getElementById('mic-btn-form').classList.add('recording');
-      document.getElementById('mic-btn-form').textContent = '⏹️';
+      const btn = document.getElementById(micBtnId);
+      if (btn) { btn.classList.add('recording'); btn.textContent = '⏹️'; }
     }
   };
+
+  const targetInput = {
+    form: 'inp-judul', comment: 'inp-comment', checklist: 'inp-checklist'
+  }[mode];
+  const micBtnId = {
+    form: 'mic-btn-form', comment: 'mic-btn-comment', checklist: 'mic-btn-check'
+  }[mode];
 
   recognition.onresult = (e) => {
     let interim = '';
@@ -2379,23 +2388,24 @@ window.startVoice = function(mode) {
     const display = voiceFinal + interim;
     if (mode === 'fab') {
       document.getElementById('voice-text').textContent = display || 'Mendengarkan...';
-    } else {
-      document.getElementById('inp-judul').value = display;
+    } else if (targetInput) {
+      document.getElementById(targetInput).value = display;
     }
   };
 
   recognition.onerror = (e) => {
-    showToast('Error: ' + e.error, 'danger');
+    showToast('Error mikrofon: ' + e.error, 'danger');
     cancelVoice();
   };
 
   recognition.onend = () => {
-    if (mode === 'form') {
-      document.getElementById('mic-btn-form').classList.remove('recording');
-      document.getElementById('mic-btn-form').textContent = '🎤';
-      if (voiceFinal) document.getElementById('inp-judul').value = voiceFinal;
+    if (mode !== 'fab') {
+      const btn = document.getElementById(micBtnId);
+      if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+      if (voiceFinal && targetInput) document.getElementById(targetInput).value = voiceFinal;
+      // Auto-submit untuk comment
+      if (mode === 'comment' && voiceFinal) sendComment();
     }
-    // fab mode: tunggu user tap Simpan/Batal
   };
 
   recognition.start();
