@@ -1041,6 +1041,7 @@
       </div>
     </div>
 
+    <button id="leave-family-btn" onclick="leaveOrDeleteFamily()" style="display:none;width:100%;padding:12px;background:none;border:1px solid #e74c3c;color:#e74c3c;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">🚪 Keluar dari Keluarga</button>
     <button class="snooze-cancel" onclick="closeShareSheet()">Tutup</button>
   </div>
 </div>
@@ -2012,21 +2013,50 @@ function updateBadge() {
   document.getElementById('badge-aktif').textContent = count > 0 ? `(${count})` : '';
 }
 
-function renderMemberList() {
+async function renderMemberList() {
   const el = document.getElementById('member-list');
   if (!familyData?.members) { el.innerHTML = ''; return; }
-  el.innerHTML = familyData.members.map(m => {
-    const initial = (m.name || '?')[0].toUpperCase();
+  el.innerHTML = `<div style="text-align:center;padding:10px;color:var(--muted);font-size:13px">Memuat anggota...</div>`;
+  // Fetch fresh profile data from users collection for each member
+  const memberProfiles = await Promise.all(familyData.members.map(async m => {
+    try {
+      const snap = await getDoc(doc(db, 'users', m.uid));
+      const data = snap.exists() ? snap.data() : {};
+      return { ...m, name: data.name || m.name || '?', email: data.email || m.email || '', photoBase64: data.photoBase64 || null };
+    } catch { return m; }
+  }));
+  const isCreator = familyData.createdBy === currentUser?.uid;
+  const isSolo = familyData.solo && familyData.members?.length <= 1;
+  el.innerHTML = memberProfiles.map(m => {
     const isMe = m.uid === currentUser?.uid;
+    const initial = (m.name || '?')[0].toUpperCase();
+    const avatarHtml = m.photoBase64
+      ? `<img src="${m.photoBase64}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+      : `<div class="member-avatar">${initial}</div>`;
+    const canKick = isCreator && !isMe && familyData.members.length > 1;
     return `<div class="member-item">
-      <div class="member-avatar">${initial}</div>
-      <div>
+      ${avatarHtml}
+      <div style="flex:1;min-width:0">
         <div class="member-name">${escHtml(m.name || '?')}</div>
         <div class="member-email">${escHtml(m.email || '')}</div>
       </div>
       ${isMe ? '<div class="member-you">SAYA</div>' : ''}
+      ${canKick ? `<button onclick="kickMember('${m.uid}')" style="background:none;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;flex-shrink:0">Keluarkan</button>` : ''}
     </div>`;
   }).join('');
+  // Tombol keluar / hapus keluarga
+  const leaveBtn = document.getElementById('leave-family-btn');
+  if (leaveBtn) {
+    if (isSolo) {
+      leaveBtn.style.display = 'none';
+    } else if (isCreator) {
+      leaveBtn.textContent = '🗑️ Hapus Keluarga';
+      leaveBtn.style.display = 'block';
+    } else {
+      leaveBtn.textContent = '🚪 Keluar dari Keluarga';
+      leaveBtn.style.display = 'block';
+    }
+  }
 }
 
 // ===================== CHECKLIST FORM =====================
@@ -2318,12 +2348,50 @@ window.closeSettings = function(e) {
   document.getElementById('settings-sheet').classList.remove('show');
 };
 
-window.openShareSheet = function() {
-  const members = familyData?.members || [];
-  const count = members.length;
+window.openShareSheet = async function() {
   setEl('display-family-code', familyData?.code || '—');
-  renderMemberList();
   document.getElementById('share-sheet').classList.add('show');
+  await renderMemberList();
+};
+
+window.kickMember = async function(uid) {
+  if (!confirm('Keluarkan anggota ini dari keluarga?')) return;
+  try {
+    const newMembers = (familyData.members || []).filter(m => m.uid !== uid);
+    await updateDoc(doc(db, 'families', familyData.id), { members: newMembers });
+    familyData.members = newMembers;
+    // Reset familyId anggota yang dikeluarkan
+    await setDoc(doc(db, 'users', uid), { familyId: null }, { merge: true });
+    showToast('✅ Anggota berhasil dikeluarkan');
+    await renderMemberList();
+  } catch(e) { showToast('Gagal: ' + e.message, 'danger'); }
+};
+
+window.leaveOrDeleteFamily = async function() {
+  const isCreator = familyData.createdBy === currentUser?.uid;
+  const msg = isCreator
+    ? 'Hapus keluarga ini? Semua anggota akan terpisah dan kembali ke workspace masing-masing.'
+    : 'Keluar dari keluarga ini? Kamu akan kembali ke workspace pribadi.';
+  if (!confirm(msg)) return;
+  try {
+    if (isCreator) {
+      // Keluarkan semua anggota lain — reset familyId mereka
+      const others = (familyData.members || []).filter(m => m.uid !== currentUser.uid);
+      await Promise.all(others.map(m => setDoc(doc(db, 'users', m.uid), { familyId: null }, { merge: true })));
+      // Hapus family doc
+      await deleteDoc(doc(db, 'families', familyData.id));
+    } else {
+      // Hapus diri sendiri dari members
+      const newMembers = (familyData.members || []).filter(m => m.uid !== currentUser.uid);
+      await updateDoc(doc(db, 'families', familyData.id), { members: newMembers });
+    }
+    // Reset userProfile dan buat solo workspace baru
+    userProfile = { ...userProfile, familyId: null };
+    await setDoc(doc(db, 'users', currentUser.uid), { familyId: null }, { merge: true });
+    document.getElementById('share-sheet').classList.remove('show');
+    showToast('✅ Berhasil. Membuat workspace pribadi...');
+    await createSoloWorkspace();
+  } catch(e) { showToast('Gagal: ' + e.message, 'danger'); }
 };
 window.closeShareSheet = function(e) {
   if (e && e.target !== document.getElementById('share-sheet')) return;
