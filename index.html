@@ -535,6 +535,19 @@
   }
   .pass-eye:hover { color: var(--accent); }
 
+  /* ===== SETTINGS SHEET ===== */
+  .setting-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 4px; cursor: pointer; border-radius: 12px;
+    transition: background 0.15s;
+  }
+  .setting-row:active { background: var(--card); }
+  .setting-icon { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
+  .setting-info { flex: 1; min-width: 0; }
+  .setting-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .setting-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .setting-arrow { color: var(--muted); font-size: 20px; flex-shrink: 0; }
+
   /* ===== BIOMETRIC ===== */
   .biometric-btn {
     margin-top: 24px; background: transparent;
@@ -755,18 +768,12 @@
   <div class="header">
     <div class="header-row">
       <h1>📋 Reminder Keluarga</h1>
-      <button class="btn-logout" onclick="doLogout()">Keluar</button>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div class="header-user" id="header-user-info">—</div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button class="theme-btn" onclick="toggleTheme()" id="btn-theme">🌙</button>
-        <button onclick="testSubscribe()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">📡</button>
-        <button onclick="showNotifDebug()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🐛</button>
+      <div style="display:flex;gap:8px;align-items:center">
         <button class="notif-btn" onclick="openNotifSheet()" id="notif-btn">🔔<span class="notif-badge" id="notif-badge">0</span></button>
-        <button onclick="setupBiometric()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">👤 Bio</button>
-        <button onclick="openPinSetup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🔐 PIN</button>
-        <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
+        <button onclick="openSettings()" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">⚙️</button>
       </div>
     </div>
   </div>
@@ -1012,6 +1019,68 @@
       <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">💾 Simpan</button>
       <button class="btn btn-secondary" onclick="closeEdit()">Batal</button>
     </div>
+  </div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="sheet-overlay" id="settings-sheet" onclick="closeSettings(event)">
+  <div class="bottom-sheet">
+    <div class="sheet-title">⚙️ Pengaturan</div>
+
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <!-- Tema -->
+      <div class="setting-row" onclick="toggleTheme();closeSettings()">
+        <span class="setting-icon" id="btn-theme">🌙</span>
+        <div class="setting-info">
+          <div class="setting-label">Tema</div>
+          <div class="setting-desc">Ganti tampilan gelap / terang</div>
+        </div>
+        <span class="setting-arrow">›</span>
+      </div>
+
+      <!-- Keluarga -->
+      <div class="setting-row" onclick="openFamilySheet();closeSettings()">
+        <span class="setting-icon">👨‍👩‍👧</span>
+        <div class="setting-info">
+          <div class="setting-label">Info Keluarga</div>
+          <div class="setting-desc" id="setting-family-code">Kode: —</div>
+        </div>
+        <span class="setting-arrow">›</span>
+      </div>
+
+      <!-- Face ID -->
+      <div class="setting-row" onclick="setupBiometric()">
+        <span class="setting-icon">👤</span>
+        <div class="setting-info">
+          <div class="setting-label">Face ID / Sidik Jari</div>
+          <div class="setting-desc" id="setting-bio-status">Belum didaftarkan</div>
+        </div>
+        <span class="setting-arrow">›</span>
+      </div>
+
+      <!-- PIN -->
+      <div class="setting-row" onclick="openPinSetup();closeSettings()">
+        <span class="setting-icon">🔐</span>
+        <div class="setting-info">
+          <div class="setting-label">Ubah PIN</div>
+          <div class="setting-desc" id="setting-pin-status">Belum diset</div>
+        </div>
+        <span class="setting-arrow">›</span>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+
+      <!-- Logout -->
+      <div class="setting-row" onclick="doLogout()" style="color:var(--danger)">
+        <span class="setting-icon">🚪</span>
+        <div class="setting-info">
+          <div class="setting-label" style="color:var(--danger)">Keluar</div>
+          <div class="setting-desc">Logout dari akun ini</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="snooze-cancel" style="margin-top:12px" onclick="closeSettings()">Tutup</button>
   </div>
 </div>
 
@@ -1947,6 +2016,21 @@ window.showNotifDebug = async function() {
 };
 
 // ===================== FAMILY SHEET =====================
+// ===================== SETTINGS SHEET =====================
+window.openSettings = function() {
+  // Update status di settings
+  const pin = localStorage.getItem('app_pin_' + currentUser?.uid);
+  document.getElementById('setting-pin-status').textContent = pin ? 'Sudah diset ✅' : 'Belum diset';
+  const bio = localStorage.getItem('bio_cred_' + currentUser?.uid);
+  document.getElementById('setting-bio-status').textContent = bio ? 'Sudah didaftarkan ✅' : 'Belum didaftarkan';
+  document.getElementById('setting-family-code').textContent = 'Kode: ' + (familyData?.code || '—');
+  document.getElementById('settings-sheet').classList.add('show');
+};
+window.closeSettings = function(e) {
+  if (e && e.target !== document.getElementById('settings-sheet')) return;
+  document.getElementById('settings-sheet').classList.remove('show');
+};
+
 window.openFamilySheet = function() {
   document.getElementById('family-sheet').classList.add('show');
 };
