@@ -438,6 +438,17 @@
   .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .photo-thumb .del-photo { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .photo-uploading { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .recording-box { border: 2px dashed var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .recording-box.recording { border-color: #e55; animation: pulse-border 1s infinite; }
+  @keyframes pulse-border { 0%,100%{border-color:#e55} 50%{border-color:#f88} }
+  .rec-controls { display: flex; gap: 8px; align-items: center; }
+  .rec-btn { padding: 8px 16px; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: 600; }
+  .rec-btn-start { background: #e55; color: #fff; }
+  .rec-btn-stop { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+  .rec-btn-delete { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 20px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .rec-timer { font-size: 13px; color: #e55; font-variant-numeric: tabular-nums; min-width: 40px; }
+  .rec-playback { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .rec-playback audio { flex: 1; height: 36px; }
   .task-photos { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; margin-bottom: 10px; }
   .task-photo-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; }
   .task-photo-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
@@ -868,6 +879,19 @@
       <div class="photo-preview-grid" id="photo-preview-grid"></div>
       <div class="photo-uploading" id="photo-uploading" style="display:none">⏳ Mengupload foto...</div>
 
+      <label>Rekaman Suara <span style="color:var(--muted);font-weight:400">(opsional, max 60 detik)</span></label>
+      <div class="recording-box" id="recording-box">
+        <div class="rec-controls">
+          <button class="rec-btn rec-btn-start" id="rec-btn-start" onclick="startRecording()">🎙️ Mulai Rekam</button>
+          <button class="rec-btn rec-btn-stop" id="rec-btn-stop" onclick="stopRecording()" style="display:none">⏹️ Stop</button>
+          <span class="rec-timer" id="rec-timer" style="display:none">0:00</span>
+        </div>
+        <div class="rec-playback" id="rec-playback" style="display:none">
+          <audio id="rec-audio" controls></audio>
+          <button class="rec-btn-delete" onclick="deleteRecording()">🗑️</button>
+        </div>
+      </div>
+
       <button class="btn btn-primary" style="margin-top:14px" onclick="tambahTugas()">💾 Simpan & Set Reminder</button>
     </div>
   </div>
@@ -1193,6 +1217,10 @@ let currentFilter = 'semua';
 let formChecklist = [];
 let formFotoFiles = [];
 let formFotoUrls = [];
+let formAudioBase64 = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
 let snoozeTargetId = null;
 let unsubNotif = null;
 let checkInterval = null;
@@ -1258,11 +1286,21 @@ async function loadFamily() {
       familyData = { id: snap.id, ...snap.data() };
       checkPinOnLoad('app');
     } else {
+      showToast('Data keluarga tidak ditemukan, silakan buat/gabung ulang', 'danger');
       showScreen('family');
     }
   } catch (e) {
-    showToast('Error memuat keluarga', 'danger');
-    showScreen('family');
+    showToast('Error: ' + e.message, 'danger');
+    // Jangan redirect ke family, coba retry sekali
+    setTimeout(async () => {
+      try {
+        const snap2 = await getDoc(doc(db, 'families', userProfile.familyId));
+        if (snap2.exists()) {
+          familyData = { id: snap2.id, ...snap2.data() };
+          checkPinOnLoad('app');
+        } else { showScreen('family'); }
+      } catch(e2) { showScreen('family'); }
+    }, 2000);
   }
 }
 
@@ -1458,7 +1496,8 @@ window.tambahTugas = async function() {
     assignTo: assignVal,
     assignToName: assignName,
     repeat: document.getElementById('inp-repeat').value,
-    photos: fotoUrls
+    photos: fotoUrls,
+    audioNote: formAudioBase64 || null
   };
 
   try {
@@ -1476,8 +1515,12 @@ window.tambahTugas = async function() {
     document.getElementById('inp-repeat').value = 'none';
     document.getElementById('inp-checklist').value = '';
     formChecklist = []; formFotoFiles = []; formFotoUrls = [];
+    formAudioBase64 = null;
     renderFormChecklist();
     document.getElementById('photo-preview-grid').innerHTML = '';
+    document.getElementById('rec-audio').src = '';
+    document.getElementById('rec-playback').style.display = 'none';
+    document.getElementById('rec-btn-start').style.display = 'inline-flex';
     setDefaultTime();
     switchTab('aktif');
   } catch (e) {
@@ -1702,6 +1745,7 @@ function taskCardHTML(t, isDone) {
     <div class="task-time ${timeClass}">${timeLabel}</div>
     ${checklistHTML}
     ${t.photos && t.photos.length > 0 ? `<div class="task-photos">${t.photos.map((url,i) => `<div class="task-photo-thumb" onclick="openPhotoViewer('${url}','${escHtml(t.judul)}')"><img src="${url}" alt="foto ${i+1}" loading="lazy"></div>`).join('')}</div>` : ''}
+    ${t.audioNote ? `<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">🎙️ Rekaman suara</div><audio controls src="${t.audioNote}" style="width:100%;height:36px"></audio></div>` : ''}
     <div class="task-actions">
       <div class="task-actions-main">
         ${!isDone ? `<button class="btn btn-success" onclick="selesaikan('${t.id}')">✅ Selesai</button>` : ''}
@@ -2034,6 +2078,10 @@ window.closeSettings = function(e) {
 };
 
 window.openFamilySheet = function() {
+  // Refresh code dari familyData terbaru
+  const code = familyData?.code || '—';
+  document.getElementById('display-family-code').textContent = code;
+  document.getElementById('setting-family-code').textContent = 'Kode: ' + code;
   document.getElementById('family-sheet').classList.add('show');
 };
 window.closeFamilySheet = function(e) {
@@ -2197,6 +2245,58 @@ function timeAgo(date) {
 }
 
 // ===================== FOTO =====================
+// ===================== AUDIO RECORDING =====================
+window.startRecording = async function() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/mp4';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: mimeType });
+      const reader = new FileReader();
+      reader.onload = () => {
+        formAudioBase64 = reader.result;
+        document.getElementById('rec-audio').src = reader.result;
+        document.getElementById('rec-playback').style.display = 'flex';
+      };
+      reader.readAsDataURL(blob);
+      document.getElementById('rec-btn-start').style.display = 'inline-flex';
+      document.getElementById('rec-btn-stop').style.display = 'none';
+      document.getElementById('rec-timer').style.display = 'none';
+      document.getElementById('recording-box').classList.remove('recording');
+      clearInterval(recordingTimer);
+    };
+    mediaRecorder.start(500);
+    document.getElementById('rec-btn-start').style.display = 'none';
+    document.getElementById('rec-btn-stop').style.display = 'inline-flex';
+    document.getElementById('rec-timer').style.display = 'inline';
+    document.getElementById('recording-box').classList.add('recording');
+    let sec = 0;
+    const timerEl = document.getElementById('rec-timer');
+    recordingTimer = setInterval(() => {
+      sec++;
+      timerEl.textContent = Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0');
+      if (sec >= 60) stopRecording();
+    }, 1000);
+  } catch(e) {
+    showToast('Tidak bisa akses mikrofon: ' + e.message, 'danger');
+  }
+};
+
+window.stopRecording = function() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+};
+
+window.deleteRecording = function() {
+  formAudioBase64 = null;
+  document.getElementById('rec-audio').src = '';
+  document.getElementById('rec-playback').style.display = 'none';
+  document.getElementById('rec-btn-start').style.display = 'inline-flex';
+};
+
 function compressImage(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
     const img = new Image();
