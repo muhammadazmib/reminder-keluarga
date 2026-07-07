@@ -1666,6 +1666,14 @@ window.saveProfile = async function() {
     const updates = { name, photoBase64: userProfile?.photoBase64 || null };
     await setDoc(doc(db, 'users', currentUser.uid), updates, { merge: true });
     userProfile = { ...userProfile, ...updates };
+    // Sync nama & foto ke array members di family doc agar terlihat oleh anggota lain
+    if (familyData?.id && familyData.members) {
+      const newMembers = familyData.members.map(m =>
+        m.uid === currentUser.uid ? { ...m, name, photoBase64: updates.photoBase64 } : m
+      );
+      await updateDoc(doc(db, 'families', familyData.id), { members: newMembers });
+      familyData.members = newMembers;
+    }
     updateHeaderInfo();
     document.getElementById('profile-sheet').classList.remove('show');
     showToast('✅ Profil berhasil disimpan!');
