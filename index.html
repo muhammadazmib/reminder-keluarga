@@ -3158,6 +3158,7 @@ async function showBioBtn() {
 }
 
 window.doBiometric = doBiometric;
+window.setupBiometric = setupBiometric;
 
 window.openPinSetup = function() {
   const existing = localStorage.getItem('app_pin_' + currentUser.uid);
