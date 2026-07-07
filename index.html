@@ -1464,11 +1464,16 @@ function initApp() {
   switchTab('dashboard');
 }
 
+function setEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
 function updateHeaderInfo() {
   const name = currentUser.displayName || userProfile?.name || 'User';
-  document.getElementById('header-user-info').textContent = `👤 ${name}`;
-  document.getElementById('family-badge').textContent = `👨‍👩‍👧 ${familyData?.code || '—'}`;
-  document.getElementById('display-family-code').textContent = familyData?.code || '—';
+  setEl('header-user-info', `👤 ${name}`);
+  setEl('family-badge', `👨‍👩‍👧 ${familyData?.code || '—'}`);
+  setEl('display-family-code', familyData?.code || '—');
   renderMemberList();
 }
 
