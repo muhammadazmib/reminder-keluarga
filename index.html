@@ -733,6 +733,7 @@
       <div class="header-user" id="header-user-info">—</div>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="theme-btn" onclick="toggleTheme()" id="btn-theme">🌙</button>
+        <button onclick="testSubscribe()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">📡</button>
         <button onclick="showNotifDebug()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🐛</button>
         <button class="notif-btn" onclick="openNotifSheet()" id="notif-btn">🔔<span class="notif-badge" id="notif-badge">0</span></button>
         <button onclick="openPinSetup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🔐 PIN</button>
@@ -1833,6 +1834,43 @@ window.requestNotifPermission = async function() {
 };
 
 // Debug panel — bantu diagnosa masalah OneSignal
+window.testSubscribe = async function() {
+  let log = '🔔 TEST SUBSCRIBE\n\n';
+  try {
+    log += '1. Meminta permission...\n';
+    const perm = await Notification.requestPermission();
+    log += `   → ${perm}\n\n`;
+
+    log += '2. Cek SW aktif...\n';
+    const regs = await navigator.serviceWorker.getRegistrations();
+    log += `   → ${regs.length} SW terdaftar\n`;
+    if (regs.length > 0) log += `   → scope: ${regs[0].scope}\n`;
+    log += '\n';
+
+    log += '3. OneSignal subscribe...\n';
+    await new Promise((resolve) => {
+      OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          const granted = await OneSignal.Notifications.requestPermission(true);
+          log += `   → requestPermission: ${granted}\n`;
+          const id = OneSignal.User.PushSubscription.id;
+          log += `   → Push ID: ${id || 'TIDAK ADA'}\n`;
+          const token = OneSignal.User.PushSubscription.token;
+          log += `   → Push Token: ${token ? token.substring(0,30)+'...' : 'TIDAK ADA ← MASALAH DI SINI'}\n`;
+          const optedIn = OneSignal.User.PushSubscription.optedIn;
+          log += `   → Opted In: ${optedIn}\n`;
+        } catch(e) {
+          log += `   → ERROR: ${e.message}\n`;
+        }
+        resolve();
+      });
+    });
+  } catch(e) {
+    log += `ERROR: ${e.message}\n`;
+  }
+  alert(log);
+};
+
 window.showNotifDebug = async function() {
   const perm = typeof Notification !== 'undefined' ? Notification.permission : 'tidak didukung';
   const swSupport = 'serviceWorker' in navigator ? 'Ya' : 'Tidak';
