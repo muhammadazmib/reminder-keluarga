@@ -396,6 +396,42 @@
     font-size: 13px; cursor: pointer; font-weight: 600;
   }
 
+  /* ===== REMINDER MODAL ===== */
+  .reminder-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 900;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .reminder-overlay.show { display: flex; }
+  .reminder-modal {
+    background: var(--card); border-radius: 20px; padding: 28px 20px;
+    width: 100%; max-width: 400px; border: 1px solid var(--accent);
+    box-shadow: 0 0 40px rgba(226,168,50,0.3);
+    animation: pulseIn 0.3s ease;
+  }
+  @keyframes pulseIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .reminder-icon { font-size: 52px; text-align: center; margin-bottom: 12px; animation: shake 0.5s ease 0.3s; }
+  @keyframes shake {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+  }
+  .reminder-title { font-size: 20px; font-weight: 800; color: var(--accent); text-align: center; margin-bottom: 8px; }
+  .reminder-task { font-size: 16px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 6px; }
+  .reminder-detail { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 20px; line-height: 1.5; }
+  .reminder-actions { display: flex; flex-direction: column; gap: 8px; }
+  .reminder-actions button { padding: 14px; border-radius: 12px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .rem-done { background: var(--success); color: #0f0f1a; }
+  .rem-snooze { background: rgba(226,168,50,0.15); border: 1px solid rgba(226,168,50,0.3) !important; color: var(--accent); }
+  .rem-close { background: transparent; border: 1px solid var(--border) !important; color: var(--muted); font-size: 13px !important; }
+  .snooze-quick { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; display: none; margin-bottom: 8px; }
+  .snooze-quick.show { display: grid; }
+  .sq-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 12px; font-weight: 600; padding: 10px 6px; cursor: pointer; text-align: center; }
+  .sq-btn:active { background: var(--accent); color: #0f0f1a; }
+
   /* ===== RECURRING BADGE ===== */
   .repeat-badge {
     display: inline-flex; align-items: center; gap: 4px;
@@ -618,6 +654,26 @@
     <div class="member-list" id="member-list"></div>
     <button class="btn btn-primary" onclick="copyFamilyCode()" style="margin-top:8px">📋 Salin Kode</button>
     <button class="snooze-cancel" style="margin-top:8px" onclick="closeFamilySheet()">Tutup</button>
+  </div>
+</div>
+
+<!-- REMINDER MODAL -->
+<div class="reminder-overlay" id="reminder-overlay">
+  <div class="reminder-modal">
+    <div class="reminder-icon">⏰</div>
+    <div class="reminder-title">Waktunya!</div>
+    <div class="reminder-task" id="rem-task-title">—</div>
+    <div class="reminder-detail" id="rem-task-detail"></div>
+    <div class="snooze-quick" id="snooze-quick">
+      <button class="sq-btn" onclick="remSnooze(10)">10 mnt</button>
+      <button class="sq-btn" onclick="remSnooze(30)">30 mnt</button>
+      <button class="sq-btn" onclick="remSnooze(60)">1 jam</button>
+    </div>
+    <div class="reminder-actions">
+      <button class="rem-done" onclick="remDone()">✅ Tandai Selesai</button>
+      <button class="rem-snooze" onclick="toggleSnoozeQuick()">💤 Tunda...</button>
+      <button class="rem-close" onclick="remClose()">Tutup (ingatkan lagi nanti)</button>
+    </div>
   </div>
 </div>
 
@@ -862,7 +918,7 @@ function listenTasks() {
   unsubTasks = onSnapshot(q, snap => {
     tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderAll();
-    checkReminders();
+    checkReminders(); // cek setiap kali data Firestore berubah
   });
 }
 
@@ -1187,35 +1243,140 @@ function renderFormChecklist() {
 }
 
 // ===================== REMINDER CHECK =====================
+let reminderQueue = [];   // antrian task yang belum ditampilkan
+let activeRemTask = null; // task yang sedang ditampilkan di modal
+
 function startReminderCheck() {
-  checkInterval = setInterval(checkReminders, 30000);
+  if (checkInterval) clearInterval(checkInterval);
+  checkInterval = setInterval(checkReminders, 10000); // cek tiap 10 detik
+  // cek saat tab aktif kembali
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkReminders();
+  });
 }
 
 function checkReminders() {
-  if (!tasks.length) return;
+  if (!tasks.length || !familyData) return;
   const now = new Date();
   tasks.forEach(t => {
     if (t.done || t.notified) return;
     if (new Date(t.reminderTime) <= now) {
-      fireNotif(t);
+      // tandai notified di Firestore agar tidak dobel
       updateDoc(doc(db, 'families', familyData.id, 'tasks', t.id), { notified: true }).catch(() => {});
+      // masukkan ke antrian kalau belum ada
+      if (!reminderQueue.find(q => q.id === t.id)) {
+        reminderQueue.push(t);
+      }
     }
   });
+  showNextReminder();
 }
 
-function fireNotif(task) {
+function showNextReminder() {
+  if (activeRemTask) return; // modal sudah terbuka
+  if (reminderQueue.length === 0) return;
+  activeRemTask = reminderQueue.shift();
+  openReminderModal(activeRemTask);
+}
+
+function openReminderModal(task) {
+  document.getElementById('rem-task-title').textContent = task.judul;
+  const detail = [
+    task.detail,
+    task.assignTo !== 'semua' ? `Untuk: ${task.assignToName}` : null,
+    task.repeat && task.repeat !== 'none' ? `🔁 ${repeatLabel(task.repeat)}` : null
+  ].filter(Boolean).join(' · ');
+  document.getElementById('rem-task-detail').textContent = detail || `Dari: ${task.createdByName || ''}`;
+  document.getElementById('snooze-quick').classList.remove('show');
+  document.getElementById('reminder-overlay').classList.add('show');
+
+  // Vibrate
+  if ('vibrate' in navigator) navigator.vibrate([300, 100, 300, 100, 300]);
+
+  // Suara beep
+  playBeep();
+
+  // Browser notification (saat tab tidak fokus)
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification(`⏰ ${task.judul}`, {
-      body: task.detail || `Dari: ${task.createdByName}`,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📋</text></svg>'
+    const n = new Notification(`⏰ ${task.judul}`, {
+      body: detail || `Dari: ${task.createdByName}`,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📋</text></svg>',
+      requireInteraction: true,
+      tag: task.id
     });
+    n.onclick = () => { window.focus(); n.close(); };
   }
-  showToast(`⏰ Reminder: ${task.judul}`, 'urgent', 5000);
+
+  // Update judul tab
+  document.title = `⏰ Reminder: ${task.judul}`;
+  setTimeout(() => { document.title = 'Catatan & Reminder Keluarga'; }, 10000);
+}
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.3, 0.6].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.25);
+    });
+  } catch(e) {}
+}
+
+function repeatLabel(r) {
+  const m = { daily:'Setiap hari', weekly:'Setiap minggu', monthly:'Setiap bulan', '3days':'Setiap 3 hari', '7days':'Setiap 7 hari', '14days':'Setiap 2 minggu' };
+  return m[r] || r;
+}
+
+// Tombol modal
+window.remDone = async function() {
+  if (!activeRemTask) return;
+  await selesaikan(activeRemTask.id);
+  closeReminderModal();
+};
+
+window.remClose = function() {
+  // Tutup modal, reset notified=false agar muncul lagi setelah 5 menit
+  if (activeRemTask) {
+    const tid = activeRemTask.id;
+    setTimeout(() => {
+      updateDoc(doc(db, 'families', familyData.id, 'tasks', tid), { notified: false }).catch(() => {});
+    }, 5 * 60 * 1000);
+  }
+  closeReminderModal();
+};
+
+window.toggleSnoozeQuick = function() {
+  document.getElementById('snooze-quick').classList.toggle('show');
+};
+
+window.remSnooze = async function(minutes) {
+  if (!activeRemTask) return;
+  const newTime = new Date(Date.now() + minutes * 60000);
+  await updateDoc(doc(db, 'families', familyData.id, 'tasks', activeRemTask.id), {
+    reminderTime: newTime.toISOString(), notified: false
+  });
+  showToast(`💤 Ditunda ${minutes} menit`);
+  closeReminderModal();
+};
+
+function closeReminderModal() {
+  document.getElementById('reminder-overlay').classList.remove('show');
+  activeRemTask = null;
+  setTimeout(showNextReminder, 500); // tampilkan antrian berikutnya
 }
 
 function checkNotifPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') showToast('🔔 Notifikasi aktif!');
+    });
   }
 }
 
