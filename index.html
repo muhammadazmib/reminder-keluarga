@@ -1837,22 +1837,36 @@ window.showNotifDebug = async function() {
   const perm = typeof Notification !== 'undefined' ? Notification.permission : 'tidak didukung';
   const swSupport = 'serviceWorker' in navigator ? 'Ya' : 'Tidak';
   let swReg = 'Tidak ada';
+  let swRegErr = '';
   let osId = 'Belum dapat';
   let osPerm = '-';
+  let swManualTest = '';
 
+  // Cek SW yang sudah terdaftar
   try {
     const regs = await navigator.serviceWorker.getRegistrations();
-    swReg = regs.length > 0 ? regs.map(r => r.scope).join(', ') : 'Tidak ada';
-  } catch(e) {}
+    swReg = regs.length > 0 ? regs.map(r => r.scope).join('\n') : 'Tidak ada';
+  } catch(e) { swReg = 'Error: ' + e.message; }
+
+  // Coba register SW manual untuk lihat error
+  try {
+    const reg = await navigator.serviceWorker.register(
+      '/reminder-keluarga/OneSignalSDKWorker.js',
+      { scope: '/reminder-keluarga/' }
+    );
+    swManualTest = 'OK: ' + reg.scope;
+  } catch(e) {
+    swManualTest = 'GAGAL: ' + e.message;
+  }
 
   OneSignalDeferred.push(async function(OneSignal) {
     try {
       osPerm = OneSignal.Notifications.permission ? 'Granted' : 'Not granted';
-      const sub = await OneSignal.User.PushSubscription.id;
+      const sub = OneSignal.User.PushSubscription.id;
       if (sub) osId = sub;
     } catch(e) { osId = 'Error: ' + e.message; }
 
-    const msg = `📊 DEBUG INFO\n\nNotification.permission: ${perm}\nService Worker: ${swSupport}\nSW terdaftar: ${swReg}\nOneSignal perm: ${osPerm}\nOneSignal ID: ${osId}`;
+    const msg = `📊 DEBUG INFO\n\nNotif permission: ${perm}\nSW support: ${swSupport}\nSW terdaftar: ${swReg}\nSW manual test: ${swManualTest}\nOneSignal perm: ${osPerm}\nOneSignal ID: ${osId}`;
     alert(msg);
   });
 };
