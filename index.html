@@ -2350,9 +2350,14 @@ window.joinFromSheet = async function() {
     }
     await setDoc(doc(db, 'users', currentUser.uid), { familyId: famDoc.id }, { merge: true });
     userProfile = { ...userProfile, familyId: famDoc.id };
-    await loadFamily();
+    // Update familyData langsung dari data yang sudah ada
+    familyData = { id: famDoc.id, ...famData };
+    // Restart listener ke family baru — unsubscribe dari family lama dulu
+    if (unsubTasks) { unsubTasks(); unsubTasks = null; }
+    listenTasks();
+    updateHeaderInfo();
     document.getElementById('share-sheet').classList.remove('show');
-    showToast('✅ Berhasil bergabung!');
+    showToast('✅ Berhasil bergabung! Task sekarang disinkronkan.');
   } catch(e) { showToast('Gagal: ' + e.message, 'danger'); }
 };
 // legacy compat
