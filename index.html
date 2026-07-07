@@ -356,6 +356,143 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
+  /* ===== DASHBOARD ===== */
+  .dash-greeting { padding: 16px; background: linear-gradient(135deg,#1a1a3e,#16213e); border-radius: 16px; margin-bottom: 14px; border: 1px solid var(--border); }
+  .dash-greeting h2 { font-size: 20px; font-weight: 800; color: var(--accent); }
+  .dash-greeting p { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .dash-section-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
+  .dash-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 4px; }
+  .dash-stat { background: var(--card); border-radius: 12px; padding: 14px; border: 1px solid var(--border); }
+  .dash-stat-num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .dash-stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .dash-stat.red .dash-stat-num { color: var(--danger); }
+  .dash-stat.green .dash-stat-num { color: var(--success); }
+  .dash-stat.blue .dash-stat-num { color: #5588cc; }
+  .dash-quick-task { background: var(--card); border-radius: 12px; padding: 12px 14px; border: 1px solid var(--border); margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.15s; }
+  .dash-quick-task:active { border-color: var(--accent); }
+  .dash-task-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dash-task-info { flex: 1; min-width: 0; }
+  .dash-task-title { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dash-task-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dash-task-time { font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .dash-task-time.overdue { color: var(--danger); }
+  .dash-quick-add { width: 100%; padding: 14px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border: none; border-radius: 12px; color: #0f0f1a; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+
+  /* ===== NOTIFIKASI ===== */
+  .notif-btn { position: relative; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 3px 8px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  .notif-badge { position: absolute; top: -4px; right: -4px; background: var(--danger); color: white; font-size: 9px; font-weight: 800; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; display: none; }
+  .notif-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 600; align-items: flex-end; justify-content: center; }
+  .notif-overlay.show { display: flex; }
+  .notif-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; max-height: 70vh; display: flex; flex-direction: column; }
+  .notif-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .notif-head-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .notif-read-all { font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 600; }
+  .notif-items { flex: 1; overflow-y: auto; }
+  .notif-item { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; cursor: pointer; transition: background 0.15s; }
+  .notif-item:hover { background: var(--card); }
+  .notif-item.unread { background: rgba(226,168,50,0.06); }
+  .notif-dot-unread { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
+  .notif-dot-read { width: 8px; height: 8px; flex-shrink: 0; }
+  .notif-item-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .notif-item-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .notif-empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* ===== FOTO ===== */
+  .photo-upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; margin-bottom: 14px; transition: all 0.2s; position: relative; }
+  .photo-upload-area:hover { border-color: var(--accent); }
+  .photo-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .photo-preview-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 14px; }
+  .photo-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb .del-photo { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .photo-uploading { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .task-photos { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; margin-bottom: 10px; }
+  .task-photo-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; }
+  .task-photo-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+  .task-photo-thumb img:hover { transform: scale(1.05); }
+
+  /* ===== PHOTO VIEWER ===== */
+  .photo-viewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
+  .photo-viewer.show { display: flex; }
+  .photo-viewer img { max-width: 95vw; max-height: 85vh; border-radius: 8px; object-fit: contain; }
+  .photo-viewer-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 28px; cursor: pointer; background: rgba(0,0,0,0.5); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+  .photo-viewer-caption { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 12px; }
+
+  /* ===== LIGHT MODE ===== */
+  body.light-mode {
+    --bg: #f0f2f8;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --muted: #666688;
+    --border: #d0d4e8;
+  }
+  body.light-mode .header { background: linear-gradient(135deg,#fff,#f0f2f8); }
+  body.light-mode input, body.light-mode textarea, body.light-mode select { background: #f8f9ff; color: #1a1a2e; }
+  body.light-mode .pin-key { background: #f0f2f8; }
+  body.light-mode .snooze-btn { background: #f0f2f8; }
+  .theme-btn {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 3px 8px; border-radius: 8px;
+    font-size: 14px; cursor: pointer; transition: all 0.2s;
+  }
+
+  /* ===== SEARCH ===== */
+  .search-wrap { position: relative; margin-bottom: 12px; }
+  .search-wrap input { margin-bottom: 0; padding-left: 38px; }
+  .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+  .search-clear { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); font-size: 16px; cursor: pointer; color: var(--muted); display: none; }
+
+  /* ===== CALENDAR ===== */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cal-title { font-size: 16px; font-weight: 800; color: var(--accent); }
+  .cal-nav { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 6px 12px; font-size: 16px; cursor: pointer; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+  .cal-day-label { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
+  .cal-day {
+    aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; cursor: pointer;
+    transition: all 0.15s; position: relative; padding: 2px;
+  }
+  .cal-day:hover { background: var(--surface); }
+  .cal-day.today { background: rgba(226,168,50,0.15); border: 1px solid var(--accent); }
+  .cal-day.selected { background: var(--accent); }
+  .cal-day.selected .cal-num { color: #0f0f1a; }
+  .cal-day.other-month { opacity: 0.3; }
+  .cal-num { font-size: 13px; font-weight: 600; color: var(--text); }
+  .cal-dots { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .cal-dot.urgent { background: var(--danger); }
+  .cal-dot.important { background: var(--accent); }
+  .cal-dot.normal { background: #5588cc; }
+  .cal-dot.done { background: var(--success); }
+  .cal-tasks { margin-top: 16px; }
+  .cal-tasks-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ===== COMMENTS ===== */
+  .comment-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 600; align-items: flex-end; justify-content: center; }
+  .comment-overlay.show { display: flex; }
+  .comment-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; display: flex; flex-direction: column; max-height: 75vh; }
+  .comment-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .comment-head-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .comment-head-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .comment-list { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .comment-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; }
+  .comment-bubble { max-width: 85%; }
+  .comment-bubble.mine { align-self: flex-end; }
+  .comment-bubble.theirs { align-self: flex-start; }
+  .bubble-text {
+    padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4;
+  }
+  .mine .bubble-text { background: var(--accent); color: #0f0f1a; border-bottom-right-radius: 4px; }
+  .theirs .bubble-text { background: var(--card); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .bubble-meta { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .mine .bubble-meta { text-align: right; }
+  .comment-input-row { display: flex; gap: 8px; padding: 12px 16px 28px; border-top: 1px solid var(--border); flex-shrink: 0; }
+  .comment-input-row input { flex: 1; margin-bottom: 0; padding: 10px 14px; font-size: 14px; }
+  .btn-send { background: var(--accent); border: none; border-radius: 10px; color: #0f0f1a; font-size: 18px; width: 44px; flex-shrink: 0; cursor: pointer; font-weight: 700; }
+  .btn-comment { background: rgba(85,136,204,0.15); border: 1px solid rgba(85,136,204,0.3); color: #5588cc; padding: 8px 14px; width: auto; font-size: 13px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
   /* ===== SHOW PASSWORD ===== */
   .pass-wrap { position: relative; margin-bottom: 14px; }
   .pass-wrap input { margin-bottom: 0; padding-right: 44px; }
@@ -545,6 +682,8 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
       <div class="header-user" id="header-user-info">—</div>
       <div style="display:flex;gap:6px;align-items:center">
+        <button class="theme-btn" onclick="toggleTheme()" id="btn-theme">🌙</button>
+        <button class="notif-btn" onclick="openNotifSheet()" id="notif-btn">🔔<span class="notif-badge" id="notif-badge">0</span></button>
         <button onclick="openPinSetup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🔐 PIN</button>
         <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
       </div>
@@ -552,9 +691,41 @@
   </div>
 
   <div class="tabs">
+    <div class="tab" onclick="switchTab('dashboard')">🏠</div>
     <div class="tab active" onclick="switchTab('tambah')">+ Tambah</div>
     <div class="tab" onclick="switchTab('aktif')">Aktif <span id="badge-aktif"></span></div>
-    <div class="tab" onclick="switchTab('selesai')">Selesai</div>
+    <div class="tab" onclick="switchTab('kalender')">📅</div>
+    <div class="tab" onclick="switchTab('selesai')">✅</div>
+  </div>
+
+  <!-- PAGE: DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="dash-greeting">
+      <h2 id="dash-greeting-text">Halo! 👋</h2>
+      <p id="dash-greeting-sub">Semangat hari ini!</p>
+    </div>
+    <div class="dash-section-title">Ringkasan</div>
+    <div class="dash-stats">
+      <div class="dash-stat">
+        <div class="dash-stat-num" id="dash-stat-today">0</div>
+        <div class="dash-stat-label">Tugas Hari Ini</div>
+      </div>
+      <div class="dash-stat red">
+        <div class="dash-stat-num" id="dash-stat-urgent">0</div>
+        <div class="dash-stat-label">Mendesak</div>
+      </div>
+      <div class="dash-stat green">
+        <div class="dash-stat-num" id="dash-stat-done-week">0</div>
+        <div class="dash-stat-label">Selesai Minggu Ini</div>
+      </div>
+      <div class="dash-stat blue">
+        <div class="dash-stat-num" id="dash-stat-total-active">0</div>
+        <div class="dash-stat-label">Total Aktif</div>
+      </div>
+    </div>
+    <div class="dash-section-title">Tugas Terdekat</div>
+    <div id="dash-upcoming-list"></div>
+    <button class="dash-quick-add" onclick="switchTab('tambah')">+ Tambah Tugas Baru</button>
   </div>
 
   <!-- PAGE: TAMBAH -->
@@ -596,6 +767,15 @@
         <button class="btn-add-check" onclick="tambahCheckItem()">+</button>
       </div>
       <div class="form-checklist-list" id="form-checklist-list"></div>
+      <label>Foto <span style="color:var(--muted);font-weight:400">(opsional, max 3)</span></label>
+      <div class="photo-upload-area" id="photo-upload-area">
+        <input type="file" id="inp-foto" accept="image/*" multiple onchange="onFotoSelected(event)">
+        <div style="font-size:24px">📷</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px">Tap untuk pilih foto</div>
+      </div>
+      <div class="photo-preview-grid" id="photo-preview-grid"></div>
+      <div class="photo-uploading" id="photo-uploading" style="display:none">⏳ Mengupload foto...</div>
+
       <button class="btn btn-primary" style="margin-top:14px" onclick="tambahTugas()">💾 Simpan & Set Reminder</button>
     </div>
   </div>
@@ -607,6 +787,11 @@
       <div class="stat-box"><div class="stat-num" id="stat-urgent" style="color:var(--danger)">0</div><div class="stat-label">Mendesak</div></div>
       <div class="stat-box"><div class="stat-num" id="stat-today" style="color:#55c97a">0</div><div class="stat-label">Hari Ini</div></div>
     </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="inp-search" placeholder="Cari tugas..." oninput="onSearch(this)">
+      <span class="search-clear" id="search-clear" onclick="clearSearch()">✕</span>
+    </div>
     <div class="filter-row">
       <button class="filter-btn active" onclick="setFilter('semua',this)">Semua</button>
       <button class="filter-btn" onclick="setFilter('saya',this)">👤 Saya</button>
@@ -616,9 +801,36 @@
     <div id="list-aktif"></div>
   </div>
 
+  <!-- PAGE: KALENDER -->
+  <div class="page" id="page-kalender">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrev()">‹</button>
+      <div class="cal-title" id="cal-title">—</div>
+      <button class="cal-nav" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-tasks" id="cal-tasks"></div>
+  </div>
+
   <!-- PAGE: SELESAI -->
   <div class="page" id="page-selesai">
     <div id="list-selesai"></div>
+  </div>
+</div>
+
+<!-- COMMENT SHEET -->
+<div class="comment-overlay" id="comment-overlay" onclick="closeComments(event)">
+  <div class="comment-sheet">
+    <div class="comment-head">
+      <div class="comment-head-title" id="comment-task-title">—</div>
+      <div class="comment-head-sub">💬 Diskusi tugas ini</div>
+    </div>
+    <div class="comment-list" id="comment-list"></div>
+    <div class="comment-input-row">
+      <input type="text" id="inp-comment" placeholder="Tulis komentar..." maxlength="300"
+        onkeydown="if(event.key==='Enter') sendComment()">
+      <button class="btn-send" onclick="sendComment()">➤</button>
+    </div>
   </div>
 </div>
 
@@ -677,6 +889,24 @@
   </div>
 </div>
 
+<!-- NOTIFICATION SHEET -->
+<div class="notif-overlay" id="notif-overlay" onclick="closeNotifSheet(event)">
+  <div class="notif-sheet">
+    <div class="notif-head">
+      <div class="notif-head-title">🔔 Notifikasi</div>
+      <div class="notif-read-all" onclick="markAllNotifRead()">Tandai semua dibaca</div>
+    </div>
+    <div class="notif-items" id="notif-items"><div class="notif-empty">Belum ada notifikasi</div></div>
+  </div>
+</div>
+
+<!-- PHOTO VIEWER -->
+<div class="photo-viewer" id="photo-viewer" onclick="closePhotoViewer()">
+  <div class="photo-viewer-close" onclick="closePhotoViewer()">✕</div>
+  <img id="photo-viewer-img" src="" alt="">
+  <div class="photo-viewer-caption" id="photo-viewer-caption"></div>
+</div>
+
 <!-- FAB -->
 <button class="fab" id="fab-btn" onclick="fabTap()" style="display:none">+</button>
 
@@ -684,7 +914,7 @@
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, serverTimestamp, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, serverTimestamp, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // ===================== FIREBASE CONFIG =====================
 const firebaseConfig = {
@@ -708,7 +938,10 @@ let tasks = [];
 let unsubTasks = null;
 let currentFilter = 'semua';
 let formChecklist = [];
+let formFotoFiles = [];
+let formFotoUrls = [];
 let snoozeTargetId = null;
+let unsubNotif = null;
 let checkInterval = null;
 let pinBuffer = '';
 let pinMode = 'verify'; // 'verify' | 'setup1' | 'setup2'
@@ -882,9 +1115,12 @@ function initApp() {
   populateAssignSelect();
   setDefaultTime();
   listenTasks();
+  listenNotifications();
   startReminderCheck();
   document.getElementById('fab-btn').style.display = 'flex';
   checkNotifPermission();
+  initTheme();
+  switchTab('dashboard');
 }
 
 function updateHeaderInfo() {
@@ -918,7 +1154,8 @@ function listenTasks() {
   unsubTasks = onSnapshot(q, snap => {
     tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderAll();
-    checkReminders(); // cek setiap kali data Firestore berubah
+    checkReminders();
+    if (document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard();
   });
 }
 
@@ -934,6 +1171,22 @@ window.tambahTugas = async function() {
   const assignName = assignVal === 'semua' ? 'Semua' :
     (familyData.members.find(m => m.uid === assignVal)?.name || 'Unknown');
 
+  // Kompres & konversi foto ke base64
+  let fotoUrls = [];
+  if (formFotoFiles.length > 0) {
+    document.getElementById('photo-uploading').style.display = 'flex';
+    try {
+      for (const file of formFotoFiles) {
+        const b64 = await compressImage(file, 800, 0.7);
+        fotoUrls.push(b64);
+      }
+    } catch (e) {
+      document.getElementById('photo-uploading').style.display = 'none';
+      showToast('Gagal proses foto: ' + e.message, 'danger'); return;
+    }
+    document.getElementById('photo-uploading').style.display = 'none';
+  }
+
   const task = {
     judul,
     detail: document.getElementById('inp-detail').value.trim(),
@@ -948,11 +1201,16 @@ window.tambahTugas = async function() {
     createdByName: currentUser.displayName || userProfile?.name,
     assignTo: assignVal,
     assignToName: assignName,
-    repeat: document.getElementById('inp-repeat').value
+    repeat: document.getElementById('inp-repeat').value,
+    photos: fotoUrls
   };
 
   try {
-    await addDoc(collection(db, 'families', familyData.id, 'tasks'), task);
+    const docRef = await addDoc(collection(db, 'families', familyData.id, 'tasks'), task);
+    // Kirim notifikasi ke orang yang ditugaskan (kecuali diri sendiri dan 'semua' tanpa target spesifik)
+    if (assignVal !== 'semua' && assignVal !== currentUser.uid) {
+      await sendTaskNotification(assignVal, assignName, judul, docRef.id);
+    }
     showToast('✅ Tugas tersimpan!');
     document.getElementById('inp-judul').value = '';
     document.getElementById('inp-detail').value = '';
@@ -961,8 +1219,9 @@ window.tambahTugas = async function() {
     document.getElementById('inp-assign').value = 'semua';
     document.getElementById('inp-repeat').value = 'none';
     document.getElementById('inp-checklist').value = '';
-    formChecklist = [];
+    formChecklist = []; formFotoFiles = []; formFotoUrls = [];
     renderFormChecklist();
+    document.getElementById('photo-preview-grid').innerHTML = '';
     setDefaultTime();
     switchTab('aktif');
   } catch (e) {
@@ -1096,13 +1355,23 @@ function renderAktif() {
   } else if (currentFilter === 'important') {
     list = list.filter(t => t.priority === 'important');
   }
+  // filter by search
+  if (searchQuery) {
+    list = list.filter(t =>
+      t.judul.toLowerCase().includes(searchQuery) ||
+      (t.detail || '').toLowerCase().includes(searchQuery) ||
+      (t.kategori || '').toLowerCase().includes(searchQuery) ||
+      (t.assignToName || '').toLowerCase().includes(searchQuery)
+    );
+  }
   list.sort((a, b) => {
     const pOrder = { urgent: 0, important: 1, normal: 2 };
     if (pOrder[a.priority] !== pOrder[b.priority]) return pOrder[a.priority] - pOrder[b.priority];
     return new Date(a.reminderTime) - new Date(b.reminderTime);
   });
   if (list.length === 0) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div><div class="empty-title">Tidak ada tugas aktif</div><div class="empty-sub">Tambah tugas baru via tombol + di bawah</div></div>`;
+    const msg = searchQuery ? `Tidak ada hasil untuk "<b>${escHtml(searchQuery)}</b>"` : 'Tidak ada tugas aktif';
+    container.innerHTML = `<div class="empty"><div class="empty-icon">${searchQuery ? '🔍' : '🎉'}</div><div class="empty-title">${msg}</div></div>`;
     return;
   }
   container.innerHTML = list.map(t => taskCardHTML(t, false)).join('');
@@ -1176,10 +1445,12 @@ function taskCardHTML(t, isDone) {
     ${t.detail ? `<div class="task-note">${escHtml(t.detail)}</div>` : ''}
     <div class="task-time ${timeClass}">${timeLabel}</div>
     ${checklistHTML}
+    ${t.photos && t.photos.length > 0 ? `<div class="task-photos">${t.photos.map((url,i) => `<div class="task-photo-thumb" onclick="openPhotoViewer('${url}','${escHtml(t.judul)}')"><img src="${url}" alt="foto ${i+1}" loading="lazy"></div>`).join('')}</div>` : ''}
     <div class="task-actions">
       ${!isDone ? `<button class="btn btn-success" onclick="selesaikan('${t.id}')">✅ Selesai</button>` : ''}
       ${!isDone ? `<button class="btn-snooze" onclick="openSnooze('${t.id}')">💤 Tunda</button>` : ''}
       ${isDone ? `<button class="btn btn-outline" onclick="batalSelesai('${t.id}')">↩️ Aktifkan</button>` : ''}
+      <button class="btn-comment" onclick="openComments('${t.id}')">💬</button>
       <button class="btn btn-danger" onclick="hapus('${t.id}')">🗑️ Hapus</button>
     </div>
   </div>`;
@@ -1394,14 +1665,203 @@ window.copyFamilyCode = function() {
   document.getElementById('family-sheet').classList.remove('show');
 };
 
+// ===================== NOTIFIKASI TUGAS =====================
+async function sendTaskNotification(targetUid, targetName, judulTask, taskId) {
+  try {
+    const notifRef = collection(db, 'families', familyData.id, 'notifications', targetUid, 'items');
+    await addDoc(notifRef, {
+      type: 'task_assigned',
+      message: `${currentUser.displayName || userProfile?.name} menugaskan "${judulTask}" kepada ${targetName}`,
+      taskId,
+      from: currentUser.uid,
+      fromName: currentUser.displayName || userProfile?.name,
+      createdAt: serverTimestamp(),
+      read: false
+    });
+  } catch (e) { console.log('notif err', e); }
+}
+
+function listenNotifications() {
+  if (!currentUser || !familyData) return;
+  if (unsubNotif) unsubNotif();
+  const q = query(
+    collection(db, 'families', familyData.id, 'notifications', currentUser.uid, 'items'),
+    orderBy('createdAt', 'desc'), limit(30)
+  );
+  unsubNotif = onSnapshot(q, snap => {
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const unread = items.filter(n => !n.read).length;
+    const badge = document.getElementById('notif-badge');
+    if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? 'flex' : 'none'; }
+    renderNotifItems(items);
+  });
+}
+
+function renderNotifItems(items) {
+  const el = document.getElementById('notif-items');
+  if (!el) return;
+  if (items.length === 0) { el.innerHTML = '<div class="notif-empty">Belum ada notifikasi</div>'; return; }
+  el.innerHTML = items.map(n => {
+    const ts = n.createdAt?.toDate ? n.createdAt.toDate() : new Date();
+    const ago = timeAgo(ts);
+    return `<div class="notif-item ${n.read ? '' : 'unread'}" onclick="notifClick('${n.id}','${n.taskId||''}')">
+      <div class="${n.read ? 'notif-dot-read' : 'notif-dot-unread'}"></div>
+      <div><div class="notif-item-text">${n.message}</div><div class="notif-item-time">${ago}</div></div>
+    </div>`;
+  }).join('');
+}
+
+window.openNotifSheet = function() {
+  document.getElementById('notif-overlay').classList.add('show');
+};
+window.closeNotifSheet = function(e) {
+  if (e && e.target !== document.getElementById('notif-overlay')) return;
+  document.getElementById('notif-overlay').classList.remove('show');
+};
+window.markAllNotifRead = async function() {
+  if (!currentUser || !familyData) return;
+  const q = query(collection(db, 'families', familyData.id, 'notifications', currentUser.uid, 'items'), where('read', '==', false));
+  const snap = await getDocs(q);
+  snap.docs.forEach(d => updateDoc(d.ref, { read: true }));
+};
+window.notifClick = async function(notifId, taskId) {
+  if (notifId && currentUser && familyData) {
+    updateDoc(doc(db, 'families', familyData.id, 'notifications', currentUser.uid, 'items', notifId), { read: true });
+  }
+  document.getElementById('notif-overlay').classList.remove('show');
+  if (taskId) switchTab('aktif');
+};
+
+function timeAgo(date) {
+  const s = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (s < 60) return 'Baru saja';
+  if (s < 3600) return Math.floor(s/60) + ' mnt lalu';
+  if (s < 86400) return Math.floor(s/3600) + ' jam lalu';
+  return Math.floor(s/86400) + ' hari lalu';
+}
+
+// ===================== FOTO =====================
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else { w = Math.round(w * maxSize / h); h = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+window.onFotoSelected = function(e) {
+  const files = Array.from(e.target.files);
+  const remaining = 3 - formFotoFiles.length;
+  if (remaining <= 0) { showToast('Maksimal 3 foto', 'danger'); return; }
+  const toAdd = files.slice(0, remaining);
+  formFotoFiles = [...formFotoFiles, ...toAdd];
+  renderFotoPreview();
+  document.getElementById('inp-foto').value = '';
+};
+
+function renderFotoPreview() {
+  const grid = document.getElementById('photo-preview-grid');
+  grid.innerHTML = formFotoFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="photo-thumb"><img src="${url}" alt="foto"><button class="del-photo" onclick="delFotoPreview(${i})">✕</button></div>`;
+  }).join('');
+  document.getElementById('photo-upload-area').style.display = formFotoFiles.length >= 3 ? 'none' : 'block';
+}
+
+window.delFotoPreview = function(i) {
+  formFotoFiles.splice(i, 1);
+  renderFotoPreview();
+};
+
+window.openPhotoViewer = function(url, caption) {
+  document.getElementById('photo-viewer-img').src = url;
+  document.getElementById('photo-viewer-caption').textContent = caption || '';
+  document.getElementById('photo-viewer').classList.add('show');
+};
+window.closePhotoViewer = function() {
+  document.getElementById('photo-viewer').classList.remove('show');
+};
+
+// ===================== DASHBOARD =====================
+function renderDashboard() {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(startOfDay.getTime() + 86400000);
+  const startOfWeek = new Date(now.getTime() - 7 * 86400000);
+
+  const active = tasks.filter(t => !t.done);
+  const todayTasks = active.filter(t => {
+    if (!t.reminderTime) return false;
+    const rt = new Date(t.reminderTime);
+    return rt >= startOfDay && rt < endOfDay;
+  });
+  const urgent = active.filter(t => t.priority === 'urgent');
+
+  // Tugas selesai minggu ini — butuh data selesai, pakai localStorage/snapshot
+  const doneThisWeek = tasks.filter(t => t.done && t.doneAt && new Date(t.doneAt) >= startOfWeek);
+
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Selamat Pagi' : hour < 17 ? 'Selamat Siang' : 'Selamat Malam';
+  const name = currentUser?.displayName || userProfile?.name || 'Kamu';
+  document.getElementById('dash-greeting-text').textContent = `${greeting}, ${name}! 👋`;
+  document.getElementById('dash-greeting-sub').textContent = `${new Date().toLocaleDateString('id-ID', {weekday:'long',day:'numeric',month:'long'})}`;
+  document.getElementById('dash-stat-today').textContent = todayTasks.length;
+  document.getElementById('dash-stat-urgent').textContent = urgent.length;
+  document.getElementById('dash-stat-done-week').textContent = doneThisWeek.length;
+  document.getElementById('dash-stat-total-active').textContent = active.length;
+
+  // Tugas terdekat (5 berikutnya)
+  const upcoming = active
+    .filter(t => t.reminderTime)
+    .sort((a, b) => new Date(a.reminderTime) - new Date(b.reminderTime))
+    .slice(0, 5);
+
+  const listEl = document.getElementById('dash-upcoming-list');
+  if (upcoming.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">Tidak ada tugas mendatang 🎉</div>';
+    return;
+  }
+  const priorityColor = { urgent: '#e85555', important: '#e2a832', normal: '#5588cc' };
+  listEl.innerHTML = upcoming.map(t => {
+    const rt = new Date(t.reminderTime);
+    const isOverdue = rt < now;
+    const timeStr = rt.toLocaleDateString('id-ID', {day:'numeric',month:'short'}) + ' ' + rt.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+    return `<div class="dash-quick-task" onclick="switchTab('aktif')">
+      <div class="dash-task-dot" style="background:${priorityColor[t.priority]||'#5588cc'}"></div>
+      <div class="dash-task-info">
+        <div class="dash-task-title">${t.judul}</div>
+        <div class="dash-task-meta">${t.assignToName || 'Semua'} ${t.kategori ? '· ' + t.kategori : ''}</div>
+      </div>
+      <div class="dash-task-time ${isOverdue ? 'overdue' : ''}">${isOverdue ? '⚠️' : ''} ${timeStr}</div>
+    </div>`;
+  }).join('');
+}
+
 // ===================== UI HELPERS =====================
 window.switchTab = function(tab) {
+  const tabNames = ['dashboard','tambah','aktif','kalender','selesai'];
+  const pageNames = ['page-dashboard','page-tambah','page-aktif','page-kalender','page-selesai'];
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['tambah','aktif','selesai'][i] === tab);
+    t.classList.toggle('active', tabNames[i] === tab);
   });
   document.querySelectorAll('.page').forEach((p, i) => {
-    p.classList.toggle('active', ['page-tambah','page-aktif','page-selesai'][i] === `page-${tab}`);
+    p.classList.toggle('active', pageNames[i] === `page-${tab}`);
   });
+  if (tab === 'kalender') renderCalendar();
+  if (tab === 'dashboard') renderDashboard();
 };
 
 window.switchAuthTab = function(tab) {
@@ -1419,6 +1879,194 @@ window.setFilter = function(filter, btn) {
 };
 
 window.fabTap = function() { switchTab('tambah'); document.getElementById('inp-judul').focus(); };
+
+// ===================== DARK/LIGHT THEME =====================
+window.toggleTheme = function() {
+  const isLight = document.body.classList.toggle('light-mode');
+  document.getElementById('btn-theme').textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('app_theme', isLight ? 'light' : 'dark');
+};
+
+function initTheme() {
+  const saved = localStorage.getItem('app_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('btn-theme');
+    if (btn) btn.textContent = '☀️';
+  }
+}
+
+// ===================== SEARCH =====================
+let searchQuery = '';
+
+window.onSearch = function(inp) {
+  searchQuery = inp.value.trim().toLowerCase();
+  document.getElementById('search-clear').style.display = searchQuery ? 'block' : 'none';
+  renderAktif();
+};
+
+window.clearSearch = function() {
+  searchQuery = '';
+  document.getElementById('inp-search').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  renderAktif();
+};
+
+// ===================== CALENDAR =====================
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calSelectedDate = null;
+
+const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+window.calPrev = function() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+};
+window.calNext = function() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+};
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${MONTHS[calMonth]} ${calYear}`;
+  const grid = document.getElementById('cal-grid');
+  const today = new Date();
+
+  // Build task map: dateStr -> [tasks]
+  const taskMap = {};
+  tasks.forEach(t => {
+    const d = new Date(t.reminderTime);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (!taskMap[key]) taskMap[key] = [];
+    taskMap[key].push(t);
+  });
+
+  // Day labels
+  let html = DAYS.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  // First day of month
+  const first = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+  const startDow = first.getDay();
+
+  // Prev month padding
+  const prevLast = new Date(calYear, calMonth, 0).getDate();
+  for (let i = startDow - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="cal-num">${prevLast - i}</div></div>`;
+  }
+
+  // Days of month
+  for (let d = 1; d <= lastDay; d++) {
+    const key = `${calYear}-${calMonth}-${d}`;
+    const dayTasks = taskMap[key] || [];
+    const isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === d;
+    const isSelected = calSelectedDate && calSelectedDate.d === d && calSelectedDate.m === calMonth && calSelectedDate.y === calYear;
+    const dots = dayTasks.slice(0,4).map(t => `<div class="cal-dot ${t.done ? 'done' : t.priority}"></div>`).join('');
+    html += `<div class="cal-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" onclick="calSelectDay(${d})">
+      <div class="cal-num">${d}</div>
+      ${dots ? `<div class="cal-dots">${dots}</div>` : ''}
+    </div>`;
+  }
+
+  // Next month padding
+  const totalCells = startDow + lastDay;
+  const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-num">${i}</div></div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // Show selected day tasks
+  if (calSelectedDate) showCalDayTasks(calSelectedDate.d, calSelectedDate.m, calSelectedDate.y);
+  else document.getElementById('cal-tasks').innerHTML = '';
+}
+
+window.calSelectDay = function(d) {
+  calSelectedDate = { d, m: calMonth, y: calYear };
+  renderCalendar();
+};
+
+function showCalDayTasks(d, m, y) {
+  const dayTasks = tasks.filter(t => {
+    const td = new Date(t.reminderTime);
+    return td.getDate() === d && td.getMonth() === m && td.getFullYear() === y;
+  });
+  const el = document.getElementById('cal-tasks');
+  if (dayTasks.length === 0) {
+    el.innerHTML = `<div class="cal-tasks-title">${d} ${MONTHS[m]}</div><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Tidak ada tugas hari ini</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="cal-tasks-title">${d} ${MONTHS[m]} — ${dayTasks.length} tugas</div>` +
+    dayTasks.map(t => taskCardHTML(t, t.done)).join('');
+}
+
+// ===================== COMMENTS =====================
+let commentTaskId = null;
+let unsubComments = null;
+
+window.openComments = function(taskId) {
+  const t = tasks.find(t => t.id === taskId);
+  if (!t) return;
+  commentTaskId = taskId;
+  document.getElementById('comment-task-title').textContent = t.judul;
+  document.getElementById('comment-list').innerHTML = '<div class="comment-empty">Memuat...</div>';
+  document.getElementById('comment-overlay').classList.add('show');
+
+  // Listen realtime
+  if (unsubComments) unsubComments();
+  const q = query(
+    collection(db, 'families', familyData.id, 'tasks', taskId, 'comments'),
+    orderBy('createdAt', 'asc')
+  );
+  unsubComments = onSnapshot(q, snap => {
+    const comments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderComments(comments);
+  });
+};
+
+window.closeComments = function(e) {
+  if (e && e.target !== document.getElementById('comment-overlay')) return;
+  if (unsubComments) { unsubComments(); unsubComments = null; }
+  document.getElementById('comment-overlay').classList.remove('show');
+  commentTaskId = null;
+};
+
+function renderComments(comments) {
+  const el = document.getElementById('comment-list');
+  if (comments.length === 0) {
+    el.innerHTML = '<div class="comment-empty">Belum ada komentar.<br>Mulai diskusi tugas ini!</div>';
+    return;
+  }
+  el.innerHTML = comments.map(c => {
+    const mine = c.authorId === currentUser.uid;
+    const time = c.createdAt?.toDate ? formatTime(c.createdAt.toDate()) : '';
+    return `<div class="comment-bubble ${mine ? 'mine' : 'theirs'}">
+      <div class="bubble-text">${escHtml(c.text)}</div>
+      <div class="bubble-meta">${mine ? '' : escHtml(c.authorName) + ' · '}${time}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+window.sendComment = async function() {
+  const inp = document.getElementById('inp-comment');
+  const text = inp.value.trim();
+  if (!text || !commentTaskId) return;
+  inp.value = '';
+  try {
+    await addDoc(collection(db, 'families', familyData.id, 'tasks', commentTaskId, 'comments'), {
+      text,
+      authorId: currentUser.uid,
+      authorName: currentUser.displayName || userProfile?.name,
+      createdAt: serverTimestamp()
+    });
+  } catch(e) { showToast('Gagal kirim: ' + e.message, 'danger'); }
+};
 
 // ===================== SHOW PASSWORD =====================
 window.togglePass = function(id, el) {
