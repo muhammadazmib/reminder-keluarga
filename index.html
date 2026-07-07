@@ -1409,7 +1409,17 @@ async function loadFamily() {
   try {
     const snap = await getDoc(doc(db, 'families', userProfile.familyId));
     if (snap.exists()) {
-      familyData = { id: snap.id, ...snap.data() };
+      const data = snap.data();
+      // Cek apakah user masih ada di members (bisa dikeluarkan oleh creator)
+      const stillMember = data.members?.some(m => m.uid === currentUser.uid);
+      if (!stillMember) {
+        // User dikeluarkan — buat solo workspace baru
+        userProfile.familyId = null;
+        await setDoc(doc(db, 'users', currentUser.uid), { familyId: null }, { merge: true });
+        await createSoloWorkspace();
+        return;
+      }
+      familyData = { id: snap.id, ...data };
       checkPinOnLoad('app');
     } else {
       // Family doc hilang — buat ulang solo workspace
@@ -2361,8 +2371,8 @@ window.kickMember = async function(uid) {
     const newMembers = (familyData.members || []).filter(m => m.uid !== uid);
     await updateDoc(doc(db, 'families', familyData.id), { members: newMembers });
     familyData.members = newMembers;
-    // Reset familyId anggota yang dikeluarkan
-    await setDoc(doc(db, 'users', uid), { familyId: null }, { merge: true });
+    // Tidak bisa reset familyId user lain (Firestore rules hanya izinkan tulis dokumen sendiri)
+    // Anggota yang dikeluarkan akan auto-deteksi saat buka app berikutnya
     showToast('✅ Anggota berhasil dikeluarkan');
     await renderMemberList();
   } catch(e) { showToast('Gagal: ' + e.message, 'danger'); }
@@ -2376,10 +2386,7 @@ window.leaveOrDeleteFamily = async function() {
   if (!confirm(msg)) return;
   try {
     if (isCreator) {
-      // Keluarkan semua anggota lain — reset familyId mereka
-      const others = (familyData.members || []).filter(m => m.uid !== currentUser.uid);
-      await Promise.all(others.map(m => setDoc(doc(db, 'users', m.uid), { familyId: null }, { merge: true })));
-      // Hapus family doc
+      // Hapus family doc — anggota lain akan auto-deteksi saat buka app
       await deleteDoc(doc(db, 'families', familyData.id));
     } else {
       // Hapus diri sendiri dari members
