@@ -1112,6 +1112,20 @@
 
 <!-- SETTINGS SHEET -->
 <!-- PROFILE SHEET -->
+<!-- BIOMETRIC DIALOG -->
+<div class="sheet-overlay" id="bio-sheet" onclick="closeBioSheet(event)">
+  <div class="bottom-sheet" style="text-align:center;padding:28px 24px">
+    <div style="font-size:52px;margin-bottom:12px" id="bio-sheet-icon">👆</div>
+    <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px" id="bio-sheet-title">Daftarkan Biometrik</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6" id="bio-sheet-desc">Gunakan sidik jari atau Face ID untuk masuk lebih cepat tanpa PIN.</div>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:800;margin-bottom:10px" id="bio-sheet-btn" onclick="setupBiometric()">
+      Daftarkan Sekarang
+    </button>
+    <button class="btn btn-secondary" style="width:100%;padding:12px" onclick="closeBioSheet()">Batal</button>
+    <div id="bio-sheet-error" style="display:none;margin-top:12px;padding:10px;background:#3a1a1a;border-radius:8px;font-size:12px;color:#f88;line-height:1.5"></div>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="profile-sheet" onclick="closeProfile(event)">
   <div class="bottom-sheet" style="max-height:85vh;overflow-y:auto">
     <div class="sheet-title">👤 Profil Saya</div>
@@ -1164,7 +1178,7 @@
       </div>
 
       <!-- Face ID -->
-      <div class="setting-row" onclick="closeSettings();setTimeout(setupBiometric,300)">
+      <div class="setting-row" onclick="closeSettings();openBioSheet()">
         <span class="setting-icon">👤</span>
         <div class="setting-info">
           <div class="setting-label">Face ID / Sidik Jari</div>
@@ -3046,27 +3060,60 @@ async function bioRegistered() {
   catch(e) { return false; }
 }
 
+window.openBioSheet = function() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const registered = !!localStorage.getItem(bioKey(currentUser?.uid));
+  const icon = isIOS ? '👤' : '👆';
+  const label = isIOS ? 'Face ID' : 'Sidik Jari';
+  document.getElementById('bio-sheet-icon').textContent = icon;
+  document.getElementById('bio-sheet-title').textContent = registered ? `Daftarkan Ulang ${label}` : `Daftarkan ${label}`;
+  document.getElementById('bio-sheet-desc').textContent = registered
+    ? `${label} sudah terdaftar. Daftarkan ulang jika ingin mengganti perangkat.`
+    : `Gunakan ${label} untuk masuk lebih cepat tanpa PIN.`;
+  document.getElementById('bio-sheet-btn').textContent = registered ? `🔄 Daftarkan Ulang` : `✅ Daftarkan Sekarang`;
+  document.getElementById('bio-sheet-error').style.display = 'none';
+  document.getElementById('bio-sheet').classList.add('show');
+};
+window.closeBioSheet = function(e) {
+  if (e && e.target !== document.getElementById('bio-sheet')) return;
+  document.getElementById('bio-sheet').classList.remove('show');
+};
+
 async function setupBiometric() {
-  if (!bioSupported()) { showToast('Perangkat tidak mendukung biometrik', 'danger'); return; }
+  if (!bioSupported()) {
+    document.getElementById('bio-sheet-error').textContent = 'Perangkat ini tidak mendukung biometrik.';
+    document.getElementById('bio-sheet-error').style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('bio-sheet-btn');
+  btn.disabled = true; btn.textContent = '⏳ Menunggu...';
+  document.getElementById('bio-sheet-error').style.display = 'none';
   try {
     const uid = currentUser.uid;
     const name = currentUser.displayName || userProfile?.name || 'User';
     const cred = await navigator.credentials.create({
       publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
-        rp: { name: 'Reminder Keluarga', id: 'muhammadazmib.github.io' },
-        user: { id: new TextEncoder().encode(uid), name: currentUser.email, displayName: name },
+        rp: { name: 'Kitask', id: 'muhammadazmib.github.io' },
+        user: { id: new TextEncoder().encode(uid), name: currentUser.email || uid, displayName: name },
         pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
         timeout: 60000
       }
     });
     localStorage.setItem(bioKey(uid), btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
-    showToast('✅ Face ID / Sidik Jari berhasil didaftarkan!');
-    showBioBtn();
+    document.getElementById('bio-sheet').classList.remove('show');
+    showToast('✅ Biometrik berhasil didaftarkan!');
+    setEl('setting-bio-status', 'Sudah didaftarkan ✅');
   } catch(e) {
-    showToast('Gagal daftar biometrik: ' + e.message, 'danger');
+    const errEl = document.getElementById('bio-sheet-error');
+    errEl.textContent = e.name === 'NotAllowedError'
+      ? 'Pendaftaran dibatalkan atau tidak diizinkan.'
+      : 'Gagal: ' + e.message;
+    errEl.style.display = 'block';
   }
+  btn.disabled = false;
+  btn.textContent = 'Coba Lagi';
 }
 
 async function doBiometric() {
