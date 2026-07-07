@@ -129,7 +129,17 @@
     margin-bottom: 4px;
   }
   .header h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
-  .header-user { font-size: 12px; color: var(--muted); }
+  .header-user { font-size: 12px; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .header-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #0f0f1a; overflow: hidden; flex-shrink: 0; }
+  .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-avatar-wrap { position: relative; width: 90px; height: 90px; margin: 0 auto 16px; }
+  .profile-avatar-big { width: 90px; height: 90px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 800; color: #0f0f1a; overflow: hidden; border: 3px solid var(--accent); }
+  .profile-avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-avatar-edit { position: absolute; bottom: 0; right: 0; background: var(--accent); border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .profile-avatar-edit input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border-radius: 50%; }
+  .profile-field { margin-bottom: 14px; }
+  .profile-field label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+  .profile-field input { width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 15px; box-sizing: border-box; }
   .family-code-badge {
     display: inline-flex;
     align-items: center;
@@ -788,7 +798,10 @@
       <h1>📋 Reminder Keluarga</h1>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div class="header-user" id="header-user-info">—</div>
+      <div class="header-user" id="header-user-info" onclick="openProfile()">
+        <div class="header-avatar" id="header-avatar"><span id="header-avatar-letter">?</span></div>
+        <span id="header-user-name">—</span>
+      </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="notif-btn" onclick="openNotifSheet()" id="notif-btn">🔔<span class="notif-badge" id="notif-badge">0</span></button>
         <button onclick="openSettings()" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">⚙️</button>
@@ -1059,6 +1072,33 @@
 </div>
 
 <!-- SETTINGS SHEET -->
+<!-- PROFILE SHEET -->
+<div class="sheet-overlay" id="profile-sheet" onclick="closeProfile(event)">
+  <div class="bottom-sheet" style="max-height:85vh;overflow-y:auto">
+    <div class="sheet-title">👤 Profil Saya</div>
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar-big" id="profile-avatar-big">
+        <span id="profile-avatar-letter">?</span>
+      </div>
+      <button class="profile-avatar-edit" title="Ganti foto">
+        📷
+        <input type="file" accept="image/*" onchange="onProfilePhotoSelected(event)">
+      </button>
+    </div>
+    <div id="profile-uploading" style="display:none;text-align:center;font-size:13px;color:var(--muted);margin-bottom:10px">⏳ Mengupload foto...</div>
+    <div class="profile-field">
+      <label>Nama</label>
+      <input type="text" id="profile-name-input" placeholder="Nama kamu..." maxlength="40">
+    </div>
+    <div class="profile-field">
+      <label>Email</label>
+      <input type="text" id="profile-email-display" disabled style="opacity:0.5;cursor:not-allowed">
+    </div>
+    <button class="btn btn-primary" onclick="saveProfile()" style="margin-top:4px">💾 Simpan Profil</button>
+    <button class="btn btn-secondary" onclick="closeProfile()" style="margin-top:8px">Batal</button>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="settings-sheet" onclick="closeSettings(event)">
   <div class="bottom-sheet">
     <div class="sheet-title">⚙️ Pengaturan</div>
@@ -1473,12 +1513,77 @@ function setEl(id, val) {
 }
 
 function updateHeaderInfo() {
-  const name = currentUser.displayName || userProfile?.name || 'User';
-  setEl('header-user-info', `👤 ${name}`);
+  const name = userProfile?.name || currentUser.displayName || 'User';
+  setEl('header-user-name', name);
   setEl('family-badge', `👨‍👩‍👧 ${familyData?.code || '—'}`);
   setEl('display-family-code', familyData?.code || '—');
+  // Update avatar header
+  const photo = userProfile?.photoBase64;
+  const avatarEl = document.getElementById('header-avatar');
+  const letterEl = document.getElementById('header-avatar-letter');
+  if (avatarEl) {
+    if (photo) {
+      avatarEl.innerHTML = `<img src="${photo}" alt="avatar">`;
+    } else {
+      avatarEl.innerHTML = `<span id="header-avatar-letter">${name.charAt(0).toUpperCase()}</span>`;
+    }
+  }
   renderMemberList();
 }
+
+// ===================== PROFILE =====================
+window.openProfile = function() {
+  const name = userProfile?.name || currentUser.displayName || '';
+  document.getElementById('profile-name-input').value = name;
+  document.getElementById('profile-email-display').value = currentUser.email || '';
+  // Avatar
+  const photo = userProfile?.photoBase64;
+  const bigAvatar = document.getElementById('profile-avatar-big');
+  if (photo) {
+    bigAvatar.innerHTML = `<img src="${photo}" alt="avatar">`;
+  } else {
+    bigAvatar.innerHTML = `<span id="profile-avatar-letter">${name.charAt(0).toUpperCase() || '?'}</span>`;
+  }
+  document.getElementById('profile-sheet').classList.add('show');
+};
+
+window.closeProfile = function(e) {
+  if (e && e.target !== document.getElementById('profile-sheet')) return;
+  document.getElementById('profile-sheet').classList.remove('show');
+};
+
+window.onProfilePhotoSelected = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('profile-uploading').style.display = 'block';
+  try {
+    const b64 = await compressImage(file, 300, 0.8);
+    userProfile = { ...userProfile, photoBase64: b64 };
+    const bigAvatar = document.getElementById('profile-avatar-big');
+    bigAvatar.innerHTML = `<img src="${b64}" alt="avatar">`;
+  } catch(err) {
+    showToast('Gagal proses foto: ' + err.message, 'danger');
+  }
+  document.getElementById('profile-uploading').style.display = 'none';
+};
+
+window.saveProfile = async function() {
+  const name = document.getElementById('profile-name-input').value.trim();
+  if (!name) { showToast('Nama tidak boleh kosong', 'danger'); return; }
+  const btn = document.querySelector('#profile-sheet .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
+  try {
+    const updates = { name, photoBase64: userProfile?.photoBase64 || null };
+    await setDoc(doc(db, 'users', currentUser.uid), updates, { merge: true });
+    userProfile = { ...userProfile, ...updates };
+    updateHeaderInfo();
+    document.getElementById('profile-sheet').classList.remove('show');
+    showToast('✅ Profil berhasil disimpan!');
+  } catch(e) {
+    showToast('Gagal simpan: ' + e.message, 'danger');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan Profil'; }
+};
 
 function populateAssignSelect() {
   const sel = document.getElementById('inp-assign');
