@@ -760,16 +760,23 @@
   <div style="font-size:13px;color:var(--muted);margin-bottom:28px;text-align:center">Hubungkan akun dengan pasangan untuk berbagi tugas</div>
 
   <div style="width:100%">
-    <div class="family-option" onclick="buatKeluarga()">
+    <div class="family-option" id="btn-buat-keluarga" onclick="buatKeluarga()" style="cursor:pointer">
       <h3>🏠 Buat Keluarga Baru</h3>
       <p>Kamu jadi admin, pasangan join pakai kode yang diberikan</p>
+    </div>
+    <div class="family-divider">atau</div>
+    <div class="family-option" id="btn-solo-mode" onclick="soloMode()" style="cursor:pointer">
+      <h3>👤 Lanjut Sendiri (Solo)</h3>
+      <p>Tanpa keluarga, hanya untuk mencatat tugas pribadi</p>
     </div>
     <div class="family-divider">atau</div>
     <div style="width:100%">
       <label>Punya kode dari pasangan?</label>
       <input type="text" id="inp-join-code" placeholder="Masukkan kode keluarga (cth: BURHAN-2847)" style="text-transform:uppercase;letter-spacing:2px">
-      <button class="btn btn-primary" onclick="joinKeluarga()">🔗 Gabung dengan Kode</button>
+      <button class="btn btn-primary" id="btn-join-keluarga" onclick="joinKeluarga()">🔗 Gabung dengan Kode</button>
     </div>
+    <div id="family-loading" style="display:none;text-align:center;padding:12px;color:var(--muted);font-size:14px">⏳ Memproses...</div>
+    <div id="family-error" style="display:none;background:#3a1a1a;border:1px solid #e55;border-radius:10px;padding:12px;margin-top:8px;font-size:13px;color:#f88"></div>
     <button class="btn btn-secondary" onclick="doLogout()">← Keluar</button>
   </div>
 </div>
@@ -1350,48 +1357,88 @@ window.doLogout = async function() {
 };
 
 // ===================== FAMILY =====================
+function setFamilyLoading(on, errMsg) {
+  document.getElementById('family-loading').style.display = on ? 'block' : 'none';
+  const errEl = document.getElementById('family-error');
+  if (errMsg) { errEl.textContent = '❌ ' + errMsg; errEl.style.display = 'block'; }
+  else { errEl.style.display = 'none'; }
+  ['btn-buat-keluarga','btn-solo-mode','btn-join-keluarga'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.pointerEvents = on ? 'none' : 'auto';
+    if (el) el.style.opacity = on ? '0.5' : '1';
+  });
+}
+
 window.buatKeluarga = async function() {
+  if (!currentUser) { setFamilyLoading(false, 'Belum login. Coba refresh halaman.'); return; }
+  setFamilyLoading(true);
   const code = generateCode();
   try {
     const ref = await addDoc(collection(db, 'families'), {
       code,
       createdBy: currentUser.uid,
       createdAt: serverTimestamp(),
-      members: [{ uid: currentUser.uid, name: currentUser.displayName || userProfile?.name, email: currentUser.email }]
+      members: [{ uid: currentUser.uid, name: currentUser.displayName || userProfile?.name || 'User', email: currentUser.email || '' }]
     });
     await setDoc(doc(db, 'users', currentUser.uid), { familyId: ref.id }, { merge: true });
     userProfile = { ...userProfile, familyId: ref.id };
+    setFamilyLoading(false);
     await loadFamily();
     showToast('🏠 Keluarga dibuat! Kode: ' + code);
   } catch (e) {
-    showToast('Gagal: ' + e.message, 'danger');
+    setFamilyLoading(false, 'Gagal buat keluarga: ' + e.message);
+  }
+};
+
+window.soloMode = async function() {
+  if (!currentUser) { setFamilyLoading(false, 'Belum login. Coba refresh halaman.'); return; }
+  setFamilyLoading(true);
+  const code = 'SOLO-' + currentUser.uid.slice(0,4).toUpperCase();
+  try {
+    const ref = await addDoc(collection(db, 'families'), {
+      code,
+      solo: true,
+      createdBy: currentUser.uid,
+      createdAt: serverTimestamp(),
+      members: [{ uid: currentUser.uid, name: currentUser.displayName || userProfile?.name || 'User', email: currentUser.email || '' }]
+    });
+    await setDoc(doc(db, 'users', currentUser.uid), { familyId: ref.id }, { merge: true });
+    userProfile = { ...userProfile, familyId: ref.id };
+    setFamilyLoading(false);
+    await loadFamily();
+    showToast('👤 Mode Solo aktif!');
+  } catch (e) {
+    setFamilyLoading(false, 'Gagal: ' + e.message);
   }
 };
 
 window.joinKeluarga = async function() {
   const code = document.getElementById('inp-join-code').value.trim().toUpperCase();
-  if (!code) { showToast('Masukkan kode keluarga', 'danger'); return; }
+  if (!code) { setFamilyLoading(false, 'Masukkan kode keluarga terlebih dahulu'); return; }
+  if (!currentUser) { setFamilyLoading(false, 'Belum login. Coba refresh halaman.'); return; }
+  setFamilyLoading(true);
   try {
     const q = query(collection(db, 'families'), where('code', '==', code));
     const snap = await getDocs(q);
-    if (snap.empty) { showToast('Kode tidak ditemukan', 'danger'); return; }
+    if (snap.empty) { setFamilyLoading(false, 'Kode keluarga "' + code + '" tidak ditemukan'); return; }
     const famDoc = snap.docs[0];
     const famData = famDoc.data();
-    const already = famData.members.some(m => m.uid === currentUser.uid);
+    const already = famData.members?.some(m => m.uid === currentUser.uid);
     if (!already) {
-      const newMembers = [...famData.members, {
+      const newMembers = [...(famData.members || []), {
         uid: currentUser.uid,
-        name: currentUser.displayName || userProfile?.name,
-        email: currentUser.email
+        name: currentUser.displayName || userProfile?.name || 'User',
+        email: currentUser.email || ''
       }];
       await updateDoc(doc(db, 'families', famDoc.id), { members: newMembers });
     }
     await setDoc(doc(db, 'users', currentUser.uid), { familyId: famDoc.id }, { merge: true });
     userProfile = { ...userProfile, familyId: famDoc.id };
+    setFamilyLoading(false);
     await loadFamily();
     showToast('✅ Berhasil bergabung!');
   } catch (e) {
-    showToast('Gagal: ' + e.message, 'danger');
+    setFamilyLoading(false, 'Gagal gabung: ' + e.message);
   }
 };
 
