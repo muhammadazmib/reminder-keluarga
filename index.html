@@ -1837,36 +1837,24 @@ window.requestNotifPermission = async function() {
 window.testSubscribe = async function() {
   let log = '🔔 TEST SUBSCRIBE\n\n';
   try {
-    log += '1. Meminta permission...\n';
-    const perm = await Notification.requestPermission();
-    log += `   → ${perm}\n\n`;
+    // Step 1: permission
+    log += '1. Permission: ' + (Notification?.permission || 'N/A') + '\n';
 
-    log += '2. Cek SW aktif...\n';
-    const regs = await navigator.serviceWorker.getRegistrations();
-    log += `   → ${regs.length} SW terdaftar\n`;
-    if (regs.length > 0) log += `   → scope: ${regs[0].scope}\n`;
-    log += '\n';
+    // Step 2: SW
+    const regs = await navigator.serviceWorker.getRegistrations().catch(() => []);
+    log += '2. SW: ' + (regs.length > 0 ? regs[0].scope : 'Tidak ada') + '\n';
 
-    log += '3. OneSignal subscribe...\n';
-    await new Promise((resolve) => {
-      OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          const granted = await OneSignal.Notifications.requestPermission(true);
-          log += `   → requestPermission: ${granted}\n`;
-          const id = OneSignal.User.PushSubscription.id;
-          log += `   → Push ID: ${id || 'TIDAK ADA'}\n`;
-          const token = OneSignal.User.PushSubscription.token;
-          log += `   → Push Token: ${token ? token.substring(0,30)+'...' : 'TIDAK ADA ← MASALAH DI SINI'}\n`;
-          const optedIn = OneSignal.User.PushSubscription.optedIn;
-          log += `   → Opted In: ${optedIn}\n`;
-        } catch(e) {
-          log += `   → ERROR: ${e.message}\n`;
-        }
-        resolve();
-      });
-    });
+    // Step 3: OneSignal object
+    const OS = window.OneSignal;
+    log += '3. OneSignal loaded: ' + (OS ? 'Ya' : 'TIDAK') + '\n';
+    if (OS) {
+      log += '4. OS.Notifications.permission: ' + OS.Notifications?.permission + '\n';
+      log += '5. OS.User.PushSubscription.id: ' + (OS.User?.PushSubscription?.id || 'TIDAK ADA') + '\n';
+      log += '6. OS.User.PushSubscription.token: ' + (OS.User?.PushSubscription?.token ? 'ADA ✅' : 'TIDAK ADA ❌') + '\n';
+      log += '7. OS.User.PushSubscription.optedIn: ' + OS.User?.PushSubscription?.optedIn + '\n';
+    }
   } catch(e) {
-    log += `ERROR: ${e.message}\n`;
+    log += 'ERROR: ' + e.message + '\n';
   }
   alert(log);
 };
