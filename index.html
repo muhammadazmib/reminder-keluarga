@@ -355,6 +355,54 @@
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ===== SHOW PASSWORD ===== */
+  .pass-wrap { position: relative; margin-bottom: 14px; }
+  .pass-wrap input { margin-bottom: 0; padding-right: 44px; }
+  .pass-eye {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    cursor: pointer; color: var(--muted); font-size: 18px; user-select: none;
+    transition: color 0.2s;
+  }
+  .pass-eye:hover { color: var(--accent); }
+
+  /* ===== PIN SCREEN ===== */
+  .pin-screen {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .pin-dots { display: flex; gap: 16px; margin: 24px 0; }
+  .pin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
+    transition: all 0.2s;
+  }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-dot.error { background: var(--danger); border-color: var(--danger); }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 240px; }
+  .pin-key {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    color: var(--text); font-size: 22px; font-weight: 700; padding: 18px 10px;
+    cursor: pointer; text-align: center; transition: all 0.15s; user-select: none;
+  }
+  .pin-key:active { transform: scale(0.93); background: var(--accent); color: #0f0f1a; }
+  .pin-key.del { font-size: 18px; color: var(--muted); }
+  .pin-key.empty { background: transparent; border-color: transparent; cursor: default; }
+  .pin-hint { font-size: 12px; color: var(--muted); margin-top: 20px; cursor: pointer; }
+  .pin-hint:hover { color: var(--accent); }
+  .pin-setup-btn {
+    margin-top: 20px; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 10px 20px; border-radius: 10px;
+    font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+
+  /* ===== RECURRING BADGE ===== */
+  .repeat-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(85,136,204,0.15); border: 1px solid rgba(85,136,204,0.3);
+    color: #5588cc; font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px; margin-bottom: 8px;
+  }
 </style>
 </head>
 <body>
@@ -363,6 +411,34 @@
 <div class="loading-screen" id="screen-loading">
   <div class="spinner"></div>
   <div style="color:var(--muted);font-size:13px">Memuat...</div>
+</div>
+
+<!-- PIN SCREEN -->
+<div class="pin-screen" id="screen-pin" style="display:none">
+  <div style="font-size:48px">🔐</div>
+  <div style="font-size:20px;font-weight:800;color:var(--accent);margin-top:12px" id="pin-title">Masukkan PIN</div>
+  <div style="font-size:13px;color:var(--muted);margin-top:4px" id="pin-sub">4 digit PIN kamu</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="dot-0"></div>
+    <div class="pin-dot" id="dot-1"></div>
+    <div class="pin-dot" id="dot-2"></div>
+    <div class="pin-dot" id="dot-3"></div>
+  </div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinInput('1')">1</button>
+    <button class="pin-key" onclick="pinInput('2')">2</button>
+    <button class="pin-key" onclick="pinInput('3')">3</button>
+    <button class="pin-key" onclick="pinInput('4')">4</button>
+    <button class="pin-key" onclick="pinInput('5')">5</button>
+    <button class="pin-key" onclick="pinInput('6')">6</button>
+    <button class="pin-key" onclick="pinInput('7')">7</button>
+    <button class="pin-key" onclick="pinInput('8')">8</button>
+    <button class="pin-key" onclick="pinInput('9')">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" onclick="pinInput('0')">0</button>
+    <button class="pin-key del" onclick="pinDelete()">⌫</button>
+  </div>
+  <div class="pin-hint" onclick="pinLogout()">Bukan saya? Ganti akun</div>
 </div>
 
 <!-- AUTH SCREEN -->
@@ -379,7 +455,10 @@
       <label>Email</label>
       <input type="email" id="login-email" placeholder="email@kamu.com" autocomplete="email">
       <label>Password</label>
-      <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+      <div class="pass-wrap">
+        <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+        <span class="pass-eye" onclick="togglePass('login-pass',this)">👁</span>
+      </div>
       <div class="error-text" id="login-err"></div>
       <button class="btn btn-primary" onclick="doLogin()" id="btn-login">Masuk</button>
     </div>
@@ -389,7 +468,10 @@
       <label>Email</label>
       <input type="email" id="reg-email" placeholder="email@kamu.com" autocomplete="email">
       <label>Password</label>
-      <input type="password" id="reg-pass" placeholder="Min. 6 karakter" autocomplete="new-password" onkeydown="if(event.key==='Enter') doRegister()">
+      <div class="pass-wrap">
+        <input type="password" id="reg-pass" placeholder="Min. 6 karakter" autocomplete="new-password" onkeydown="if(event.key==='Enter') doRegister()">
+        <span class="pass-eye" onclick="togglePass('reg-pass',this)">👁</span>
+      </div>
       <div class="error-text" id="reg-err"></div>
       <button class="btn btn-primary" onclick="doRegister()" id="btn-register">Buat Akun</button>
     </div>
@@ -424,9 +506,12 @@
       <h1>📋 Reminder Keluarga</h1>
       <button class="btn-logout" onclick="doLogout()">Keluar</button>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
       <div class="header-user" id="header-user-info">—</div>
-      <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="openPinSetup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🔐 PIN</button>
+        <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
+      </div>
     </div>
   </div>
 
@@ -458,6 +543,17 @@
       <input type="datetime-local" id="inp-time">
       <label>Kategori</label>
       <input type="text" id="inp-kategori" placeholder="Kantor, Rumah, Belanja..." maxlength="30">
+      <label>Ulangi / Recurring</label>
+      <select id="inp-repeat">
+        <option value="none">🚫 Tidak diulang</option>
+        <option value="daily">📅 Setiap hari</option>
+        <option value="weekly">📅 Setiap minggu</option>
+        <option value="monthly">📅 Setiap bulan</option>
+        <option value="3days">📅 Setiap 3 hari</option>
+        <option value="7days">📅 Setiap 7 hari</option>
+        <option value="14days">📅 Setiap 2 minggu</option>
+      </select>
+
       <label>Sub-task / Checklist <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label>
       <div class="checklist-input-row">
         <input type="text" id="inp-checklist" placeholder="Tambah langkah..." maxlength="100" onkeydown="if(event.key==='Enter'){tambahCheckItem();event.preventDefault()}">
@@ -558,6 +654,9 @@ let currentFilter = 'semua';
 let formChecklist = [];
 let snoozeTargetId = null;
 let checkInterval = null;
+let pinBuffer = '';
+let pinMode = 'verify'; // 'verify' | 'setup1' | 'setup2'
+let pinSetupTemp = '';
 
 // ===================== AUTH STATE =====================
 onAuthStateChanged(auth, async (user) => {
@@ -592,13 +691,29 @@ async function loadUserProfile() {
   }
 }
 
+function checkPinOnLoad(nextScreen) {
+  const pin = localStorage.getItem('app_pin_' + currentUser.uid);
+  const sessionOk = sessionStorage.getItem('pin_verified');
+  if (pin && !sessionOk) {
+    pinMode = 'verify';
+    pinBuffer = '';
+    updatePinDots();
+    document.getElementById('pin-title').textContent = 'Masukkan PIN';
+    document.getElementById('pin-sub').textContent = 'Verifikasi identitas kamu';
+    showScreen('pin');
+    window._afterPin = nextScreen;
+  } else {
+    showScreen(nextScreen);
+    if (nextScreen === 'app') initApp();
+  }
+}
+
 async function loadFamily() {
   try {
     const snap = await getDoc(doc(db, 'families', userProfile.familyId));
     if (snap.exists()) {
       familyData = { id: snap.id, ...snap.data() };
-      showScreen('app');
-      initApp();
+      checkPinOnLoad('app');
     } else {
       showScreen('family');
     }
@@ -776,7 +891,8 @@ window.tambahTugas = async function() {
     createdBy: currentUser.uid,
     createdByName: currentUser.displayName || userProfile?.name,
     assignTo: assignVal,
-    assignToName: assignName
+    assignToName: assignName,
+    repeat: document.getElementById('inp-repeat').value
   };
 
   try {
@@ -787,6 +903,7 @@ window.tambahTugas = async function() {
     document.getElementById('inp-kategori').value = '';
     document.getElementById('inp-priority').value = 'important';
     document.getElementById('inp-assign').value = 'semua';
+    document.getElementById('inp-repeat').value = 'none';
     document.getElementById('inp-checklist').value = '';
     formChecklist = [];
     renderFormChecklist();
@@ -799,13 +916,39 @@ window.tambahTugas = async function() {
 
 window.selesaikan = async function(id) {
   try {
+    const t = tasks.find(t => t.id === id);
     await updateDoc(doc(db, 'families', familyData.id, 'tasks', id), {
       done: true, doneAt: new Date().toISOString(), doneBy: currentUser.uid,
       doneByName: currentUser.displayName || userProfile?.name
     });
-    showToast('✅ Tugas selesai!');
+    // Auto-create next occurrence if recurring
+    if (t && t.repeat && t.repeat !== 'none') {
+      const nextTime = calcNextRepeat(new Date(t.reminderTime), t.repeat);
+      await addDoc(collection(db, 'families', familyData.id, 'tasks'), {
+        ...t, id: undefined, done: false, notified: false,
+        reminderTime: nextTime.toISOString(),
+        createdAt: serverTimestamp(),
+        checklist: (t.checklist || []).map(c => ({ ...c, done: false }))
+      });
+      showToast(`✅ Selesai! Tugas berikutnya: ${formatDate(nextTime)}`);
+    } else {
+      showToast('✅ Tugas selesai!');
+    }
   } catch (e) { showToast('Gagal: ' + e.message, 'danger'); }
 };
+
+function calcNextRepeat(from, repeat) {
+  const d = new Date(from);
+  switch (repeat) {
+    case 'daily':   d.setDate(d.getDate() + 1); break;
+    case 'weekly':  d.setDate(d.getDate() + 7); break;
+    case 'monthly': d.setMonth(d.getMonth() + 1); break;
+    case '3days':   d.setDate(d.getDate() + 3); break;
+    case '7days':   d.setDate(d.getDate() + 7); break;
+    case '14days':  d.setDate(d.getDate() + 14); break;
+  }
+  return d;
+}
 
 window.batalSelesai = async function(id) {
   try {
@@ -960,6 +1103,8 @@ function taskCardHTML(t, isDone) {
     </div>` : '';
 
   const assignLabel = t.assignTo === 'semua' ? '👨‍👩‍👧 Semua' : `👤 ${t.assignToName || '?'}`;
+  const repeatLabels = { daily:'Setiap hari', weekly:'Setiap minggu', monthly:'Setiap bulan', '3days':'Setiap 3 hari', '7days':'Setiap 7 hari', '14days':'Setiap 2 minggu' };
+  const repeatHTML = (t.repeat && t.repeat !== 'none') ? `<div class="repeat-badge">🔁 ${repeatLabels[t.repeat] || t.repeat}</div>` : '';
 
   return `<div class="task-card ${t.priority} ${isDone ? 'done' : ''}">
     <div class="task-head">
@@ -971,6 +1116,7 @@ function taskCardHTML(t, isDone) {
       Oleh ${t.createdByName || '?'} · ${assignLabel}
       ${t.kategori ? `· 📁 ${escHtml(t.kategori)}` : ''}
     </div>
+    ${repeatHTML}
     ${t.detail ? `<div class="task-note">${escHtml(t.detail)}</div>` : ''}
     <div class="task-time ${timeClass}">${timeLabel}</div>
     ${checklistHTML}
@@ -1113,10 +1259,94 @@ window.setFilter = function(filter, btn) {
 
 window.fabTap = function() { switchTab('tambah'); document.getElementById('inp-judul').focus(); };
 
+// ===================== SHOW PASSWORD =====================
+window.togglePass = function(id, el) {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; el.textContent = '🙈'; }
+  else { inp.type = 'password'; el.textContent = '👁'; }
+};
+
+// ===================== PIN =====================
+window.pinInput = function(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(() => handlePinComplete(), 150);
+};
+
+window.pinDelete = function() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+};
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    if (!dot) return;
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    dot.classList.remove('error');
+  }
+}
+
+function handlePinComplete() {
+  if (pinMode === 'verify') {
+    const saved = localStorage.getItem('app_pin_' + currentUser.uid);
+    if (pinBuffer === saved) {
+      sessionStorage.setItem('pin_verified', '1');
+      showScreen(window._afterPin || 'app');
+      if ((window._afterPin || 'app') === 'app') initApp();
+    } else {
+      for (let i = 0; i < 4; i++) document.getElementById('dot-' + i).classList.add('error');
+      setTimeout(() => { pinBuffer = ''; updatePinDots(); }, 800);
+      showToast('❌ PIN salah', 'danger');
+    }
+  } else if (pinMode === 'setup1') {
+    pinSetupTemp = pinBuffer;
+    pinBuffer = '';
+    updatePinDots();
+    document.getElementById('pin-title').textContent = 'Konfirmasi PIN';
+    document.getElementById('pin-sub').textContent = 'Masukkan PIN yang sama sekali lagi';
+    pinMode = 'setup2';
+  } else if (pinMode === 'setup2') {
+    if (pinBuffer === pinSetupTemp) {
+      localStorage.setItem('app_pin_' + currentUser.uid, pinBuffer);
+      sessionStorage.setItem('pin_verified', '1');
+      showToast('🔐 PIN berhasil diset!');
+      showScreen('app');
+    } else {
+      for (let i = 0; i < 4; i++) document.getElementById('dot-' + i).classList.add('error');
+      setTimeout(() => {
+        pinBuffer = ''; pinSetupTemp = ''; pinMode = 'setup1';
+        updatePinDots();
+        document.getElementById('pin-title').textContent = 'Buat PIN Baru';
+        document.getElementById('pin-sub').textContent = 'Masukkan 4 digit PIN';
+      }, 800);
+      showToast('❌ PIN tidak cocok, ulangi', 'danger');
+    }
+  }
+}
+
+window.openPinSetup = function() {
+  const existing = localStorage.getItem('app_pin_' + currentUser.uid);
+  pinMode = 'setup1'; pinBuffer = ''; pinSetupTemp = '';
+  updatePinDots();
+  document.getElementById('pin-title').textContent = existing ? 'Ganti PIN' : 'Buat PIN Baru';
+  document.getElementById('pin-sub').textContent = 'Masukkan 4 digit PIN';
+  window._afterPin = 'app';
+  showScreen('pin');
+};
+
+window.pinLogout = function() {
+  localStorage.removeItem('app_pin_' + currentUser.uid);
+  sessionStorage.removeItem('pin_verified');
+  doLogout();
+};
+
 function showScreen(name) {
   document.getElementById('screen-loading').style.display = 'none';
   document.getElementById('screen-auth').style.display = name === 'auth' ? 'flex' : 'none';
   document.getElementById('screen-family').style.display = name === 'family' ? 'flex' : 'none';
+  document.getElementById('screen-pin').style.display = name === 'pin' ? 'flex' : 'none';
   document.getElementById('screen-app').style.display = name === 'app' ? 'block' : 'none';
   document.getElementById('fab-btn').style.display = name === 'app' ? 'flex' : 'none';
 }
