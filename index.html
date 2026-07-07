@@ -844,7 +844,10 @@
         <button class="mic-btn" id="mic-btn-form" onclick="startVoice('form')" title="Input suara">🎤</button>
       </div>
       <label>Detail / Catatan</label>
-      <textarea id="inp-detail" placeholder="Tambah detail, instruksi, atau konteks..."></textarea>
+      <div class="checklist-input-row" style="align-items:flex-start">
+        <button class="mic-btn" id="mic-btn-detail" onclick="startVoice('detail')" title="Rekam suara" style="margin-top:6px">🎤</button>
+        <textarea id="inp-detail" placeholder="Tambah detail, instruksi, atau konteks..." style="flex:1"></textarea>
+      </div>
       <label>Ditugaskan kepada</label>
       <select id="inp-assign">
         <option value="semua">👨‍👩‍👧 Semua anggota</option>
@@ -2524,10 +2527,10 @@ window.startVoice = function(mode) {
   };
 
   const targetInput = {
-    form: 'inp-judul', comment: 'inp-comment', checklist: 'inp-checklist'
+    form: 'inp-judul', comment: 'inp-comment', checklist: 'inp-checklist', detail: 'inp-detail'
   }[mode];
   const micBtnId = {
-    form: 'mic-btn-form', comment: 'mic-btn-comment', checklist: 'mic-btn-check'
+    form: 'mic-btn-form', comment: 'mic-btn-comment', checklist: 'mic-btn-check', detail: 'mic-btn-detail'
   }[mode];
 
   recognition.onresult = (e) => {
