@@ -535,6 +535,18 @@
   }
   .pass-eye:hover { color: var(--accent); }
 
+  /* ===== BIOMETRIC ===== */
+  .biometric-btn {
+    margin-top: 24px; background: transparent;
+    border: 2px solid var(--accent); color: var(--accent);
+    padding: 14px 32px; border-radius: 16px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    transition: all 0.2s;
+  }
+  .biometric-btn:active { background: var(--accent); color: #0f0f1a; }
+  .biometric-icon { font-size: 28px; }
+
   /* ===== PIN SCREEN ===== */
   .pin-screen {
     min-height: 100vh; display: flex; flex-direction: column;
@@ -673,6 +685,10 @@
     <button class="pin-key" onclick="pinInput('0')">0</button>
     <button class="pin-key del" onclick="pinDelete()">⌫</button>
   </div>
+  <button class="biometric-btn" id="bio-btn" onclick="doBiometric()" style="display:none">
+    <span class="biometric-icon" id="bio-icon">🔒</span>
+    <span id="bio-label">Face ID / Sidik Jari</span>
+  </button>
   <div class="pin-hint" onclick="pinLogout()">Bukan saya? Ganti akun</div>
 </div>
 
@@ -748,6 +764,7 @@
         <button onclick="testSubscribe()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">📡</button>
         <button onclick="showNotifDebug()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🐛</button>
         <button class="notif-btn" onclick="openNotifSheet()" id="notif-btn">🔔<span class="notif-badge" id="notif-badge">0</span></button>
+        <button onclick="setupBiometric()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">👤 Bio</button>
         <button onclick="openPinSetup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🔐 PIN</button>
         <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
       </div>
@@ -1154,8 +1171,9 @@ function checkPinOnLoad(nextScreen) {
     updatePinDots();
     document.getElementById('pin-title').textContent = 'Masukkan PIN';
     document.getElementById('pin-sub').textContent = 'Verifikasi identitas kamu';
-    showScreen('pin');
     window._afterPin = nextScreen;
+    showScreen('pin');
+    showBioBtn(); // tampilkan & auto-trigger biometric jika terdaftar
   } else {
     showScreen(nextScreen);
     if (nextScreen === 'app') initApp();
@@ -2571,6 +2589,83 @@ function handlePinComplete() {
     }
   }
 }
+
+// ===================== BIOMETRIC (WebAuthn) =====================
+function bioKey(uid) { return 'bio_cred_' + uid; }
+function bioSupported() { return window.PublicKeyCredential !== undefined; }
+
+async function bioRegistered() {
+  const id = localStorage.getItem(bioKey(currentUser.uid));
+  if (!id) return false;
+  try { return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }
+  catch(e) { return false; }
+}
+
+async function setupBiometric() {
+  if (!bioSupported()) { showToast('Perangkat tidak mendukung biometrik', 'danger'); return; }
+  try {
+    const uid = currentUser.uid;
+    const name = currentUser.displayName || userProfile?.name || 'User';
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: 'Reminder Keluarga', id: 'muhammadazmib.github.io' },
+        user: { id: new TextEncoder().encode(uid), name: currentUser.email, displayName: name },
+        pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }
+    });
+    localStorage.setItem(bioKey(uid), btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+    showToast('✅ Face ID / Sidik Jari berhasil didaftarkan!');
+    showBioBtn();
+  } catch(e) {
+    showToast('Gagal daftar biometrik: ' + e.message, 'danger');
+  }
+}
+
+async function doBiometric() {
+  const storedId = localStorage.getItem(bioKey(currentUser.uid));
+  if (!storedId) return;
+  try {
+    const rawId = Uint8Array.from(atob(storedId), c => c.charCodeAt(0));
+    await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [{ id: rawId, type: 'public-key' }],
+        userVerification: 'required',
+        timeout: 60000
+      }
+    });
+    // Berhasil verifikasi
+    sessionStorage.setItem('pin_verified', '1');
+    const next = window._afterPin || 'app';
+    showScreen(next);
+    if (next === 'app') initApp();
+  } catch(e) {
+    if (e.name !== 'NotAllowedError') showToast('Biometrik gagal: ' + e.message, 'danger');
+  }
+}
+
+async function showBioBtn() {
+  const btn = document.getElementById('bio-btn');
+  if (!btn) return;
+  const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(() => false);
+  const registered = !!localStorage.getItem(bioKey(currentUser?.uid));
+  if (available && registered) {
+    btn.style.display = 'flex';
+    // Deteksi iOS untuk icon Face ID vs Android fingerprint
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    document.getElementById('bio-icon').textContent = isIOS ? '👤' : '👆';
+    document.getElementById('bio-label').textContent = isIOS ? 'Masuk dengan Face ID' : 'Masuk dengan Sidik Jari';
+    // Auto-trigger biometric langsung
+    setTimeout(doBiometric, 400);
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+window.doBiometric = doBiometric;
 
 window.openPinSetup = function() {
   const existing = localStorage.getItem('app_pin_' + currentUser.uid);
