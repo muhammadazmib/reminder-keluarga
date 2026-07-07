@@ -1050,6 +1050,17 @@
 <!-- (legacy kept for copyFamilyCode ref) -->
 <div id="family-sheet" style="display:none"><div id="dummy-fc"></div></div>
 
+<!-- TASK DETAIL MODAL -->
+<div class="sheet-overlay" id="task-detail-overlay" onclick="closeTaskDetail(event)">
+  <div class="bottom-sheet" style="max-height:85vh;overflow-y:auto" id="task-detail-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="sheet-title" style="margin:0">📋 Detail Tugas</div>
+      <span onclick="closeTaskDetail()" style="cursor:pointer;color:var(--muted);font-size:22px;line-height:1">✕</span>
+    </div>
+    <div id="task-detail-content"></div>
+  </div>
+</div>
+
 <!-- REMINDER MODAL -->
 <div class="reminder-overlay" id="reminder-overlay">
   <div class="reminder-modal">
@@ -1830,6 +1841,10 @@ window.batalSelesai = async function(id) {
 };
 
 window.hapus = async function(id) {
+  const t = tasks.find(t => t.id === id);
+  if (t && t.createdBy !== currentUser.uid) {
+    showToast('⛔ Hanya pembuat tugas yang bisa menghapus', 'danger'); return;
+  }
   if (!confirm('Hapus tugas ini?')) return;
   try {
     await deleteDoc(doc(db, 'families', familyData.id, 'tasks', id));
@@ -1903,8 +1918,7 @@ function renderAll() {
 }
 
 function visibleToMe(t) {
-  // Task tampil jika: ditugaskan ke semua, ke saya, atau dibuat oleh saya tanpa assign spesifik
-  return !t.assignTo || t.assignTo === 'semua' || t.assignTo === currentUser.uid;
+  return !t.assignTo || t.assignTo === 'semua' || t.assignTo === currentUser.uid || t.createdBy === currentUser.uid;
 }
 
 function renderAktif() {
@@ -1994,7 +2008,7 @@ function taskCardHTML(t, isDone) {
   const repeatHTML = (t.repeat && t.repeat !== 'none') ? `<div class="repeat-badge">🔁 ${repeatLabels[t.repeat] || t.repeat}</div>` : '';
 
   return `<div class="task-card ${t.priority} ${isDone ? 'done' : ''}">
-    <div class="task-head">
+    <div class="task-head" onclick="openTaskDetail('${t.id}')" style="cursor:pointer">
       <div class="task-title ${isDone ? 'done-text' : ''}">${escHtml(t.judul)}</div>
       <div class="priority-badge ${badgeMap[t.priority]}">${badgeLabel[t.priority]}</div>
     </div>
@@ -2018,7 +2032,7 @@ function taskCardHTML(t, isDone) {
         ${!isDone ? `<button class="btn-icon snooze" onclick="openSnooze('${t.id}')">💤<span>Tunda</span></button>` : ''}
         ${!isDone ? `<button class="btn-icon edit" onclick="openEdit('${t.id}')">✏️<span>Edit</span></button>` : ''}
         <button class="btn-icon comment" onclick="openComments('${t.id}')">💬<span>Catatan</span></button>
-        <button class="btn-icon danger" onclick="hapus('${t.id}')">🗑️<span>Hapus</span></button>
+        ${isMine ? `<button class="btn-icon danger" onclick="hapus('${t.id}')">🗑️<span>Hapus</span></button>` : ''}
       </div>
     </div>
   </div>`;
@@ -2451,6 +2465,54 @@ window.joinFromSheet = async function() {
 };
 // legacy compat
 window.openFamilySheet = window.openShareSheet;
+
+window.openTaskDetail = function(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  const priorityLabel = { urgent: '🔴 Mendesak', important: '🟡 Penting', normal: '🔵 Normal' };
+  const repeatLabels = { daily:'Setiap hari', weekly:'Setiap minggu', monthly:'Setiap bulan', '3days':'Setiap 3 hari', '7days':'Setiap 7 hari', '14days':'Setiap 2 minggu' };
+  const assignLabel = t.assignTo === 'semua' ? '👨‍👩‍👧 Semua anggota' : `👤 ${t.assignToName || '?'}`;
+
+  const historyHTML = (t.editHistory && t.editHistory.length > 0) ? `
+    <div style="margin-top:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">📝 Histori Edit</div>
+      ${[...t.editHistory].reverse().map(h => `
+        <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--accent)">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">✏️ ${escHtml(h.byName)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${h.at ? new Date(h.at).toLocaleString('id-ID') : '-'}</div>
+          ${h.prevJudul ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">Judul sebelumnya: <i>"${escHtml(h.prevJudul)}"</i></div>` : ''}
+          ${h.prevDetail ? `<div style="font-size:12px;color:var(--muted)">Catatan sebelumnya: <i>"${escHtml(h.prevDetail)}"</i></div>` : ''}
+        </div>`).join('')}
+    </div>` : '';
+
+  const doneHTML = t.done ? `
+    <div style="background:#1a3a1a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #2d5a2d">
+      <div style="font-size:13px;font-weight:700;color:#4caf50">✅ Diselesaikan</div>
+      <div style="font-size:13px;color:var(--text);margin-top:4px">oleh <b>${escHtml(t.doneByName || '?')}</b></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.doneAt ? new Date(t.doneAt).toLocaleString('id-ID') : '-'}</div>
+    </div>` : '';
+
+  document.getElementById('task-detail-content').innerHTML = `
+    <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">${escHtml(t.judul)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Dibuat oleh <b>${escHtml(t.createdByName || '?')}</b> · ${t.createdAt ? new Date(t.createdAt?.toDate?.() || t.createdAt).toLocaleString('id-ID') : '-'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <span style="background:var(--bg);border-radius:6px;padding:4px 10px;font-size:12px">${priorityLabel[t.priority] || t.priority}</span>
+      <span style="background:var(--bg);border-radius:6px;padding:4px 10px;font-size:12px">${assignLabel}</span>
+      ${t.kategori ? `<span style="background:var(--bg);border-radius:6px;padding:4px 10px;font-size:12px">📁 ${escHtml(t.kategori)}</span>` : ''}
+      ${t.repeat && t.repeat !== 'none' ? `<span style="background:var(--bg);border-radius:6px;padding:4px 10px;font-size:12px">🔁 ${repeatLabels[t.repeat]}</span>` : ''}
+    </div>
+    ${t.detail ? `<div style="background:var(--bg);border-radius:10px;padding:12px;font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.5">${escHtml(t.detail)}</div>` : ''}
+    <div style="font-size:13px;color:var(--muted)">⏰ ${t.reminderTime ? new Date(t.reminderTime).toLocaleString('id-ID') : '-'}</div>
+    ${doneHTML}
+    ${historyHTML}
+  `;
+  document.getElementById('task-detail-overlay').classList.add('show');
+};
+
+window.closeTaskDetail = function(e) {
+  if (e && e.target !== document.getElementById('task-detail-overlay')) return;
+  document.getElementById('task-detail-overlay').classList.remove('show');
+};
 window.closeFamilySheet = window.closeShareSheet;
 
 // ===================== EDIT TUGAS =====================
@@ -2508,6 +2570,14 @@ window.saveEdit = async function() {
     (familyData.members.find(m => m.uid === assignVal)?.name || 'Unknown');
 
   try {
+    const prevTask = tasks.find(t => t.id === editTaskId);
+    const histEntry = {
+      by: currentUser.uid,
+      byName: currentUser.displayName || userProfile?.name || 'User',
+      at: new Date().toISOString(),
+      prevJudul: prevTask?.judul || '',
+      prevDetail: prevTask?.detail || ''
+    };
     await updateDoc(doc(db, 'families', familyData.id, 'tasks', editTaskId), {
       judul,
       detail: document.getElementById('edit-detail').value.trim(),
@@ -2517,7 +2587,8 @@ window.saveEdit = async function() {
       assignTo: assignVal,
       assignToName: assignName,
       repeat: document.getElementById('edit-repeat').value,
-      notified: false
+      notified: false,
+      editHistory: [...(prevTask?.editHistory || []), histEntry]
     });
     showToast('✅ Tugas diperbarui!');
     document.getElementById('edit-overlay').classList.remove('show');
