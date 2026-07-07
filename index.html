@@ -2476,13 +2476,33 @@ window.openTaskDetail = function(id) {
   const historyHTML = (t.editHistory && t.editHistory.length > 0) ? `
     <div style="margin-top:16px">
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">📝 Histori Edit</div>
-      ${[...t.editHistory].reverse().map(h => `
-        <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--accent)">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">✏️ ${escHtml(h.byName)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${h.at ? new Date(h.at).toLocaleString('id-ID') : '-'}</div>
-          ${h.prevJudul ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">Judul sebelumnya: <i>"${escHtml(h.prevJudul)}"</i></div>` : ''}
-          ${h.prevDetail ? `<div style="font-size:12px;color:var(--muted)">Catatan sebelumnya: <i>"${escHtml(h.prevDetail)}"</i></div>` : ''}
-        </div>`).join('')}
+      ${[...t.editHistory].reverse().map(h => {
+        const judulChanged = h.prevJudul !== h.newJudul;
+        const detailChanged = h.prevDetail !== h.newDetail;
+        const judulHTML = judulChanged ? `
+          <div style="margin-top:6px;font-size:12px">
+            <span style="color:var(--muted)">Judul:</span><br>
+            <span style="color:#e74c3c;text-decoration:line-through">${escHtml(h.prevJudul || '—')}</span>
+            <span style="color:var(--muted)"> → </span>
+            <span style="color:#4caf50">${escHtml(h.newJudul || '—')}</span>
+          </div>` : '';
+        const detailHTML = detailChanged ? `
+          <div style="margin-top:4px;font-size:12px">
+            <span style="color:var(--muted)">Catatan:</span><br>
+            <span style="color:#e74c3c;text-decoration:line-through">${escHtml(h.prevDetail || '—')}</span>
+            <span style="color:var(--muted)"> → </span>
+            <span style="color:#4caf50">${escHtml(h.newDetail || '—')}</span>
+          </div>` : '';
+        const noChange = !judulChanged && !detailChanged;
+        return `<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--accent)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">✏️ ${escHtml(h.byName)}</div>
+            <div style="font-size:11px;color:var(--muted)">${h.at ? new Date(h.at).toLocaleString('id-ID') : '-'}</div>
+          </div>
+          ${judulHTML}${detailHTML}
+          ${noChange ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">Field lain diperbarui (prioritas/waktu/assign)</div>` : ''}
+        </div>`;
+      }).join('')}
     </div>` : '';
 
   const doneHTML = t.done ? `
@@ -2571,12 +2591,16 @@ window.saveEdit = async function() {
 
   try {
     const prevTask = tasks.find(t => t.id === editTaskId);
+    const newJudul = judul;
+    const newDetail = document.getElementById('edit-detail').value.trim();
     const histEntry = {
       by: currentUser.uid,
       byName: currentUser.displayName || userProfile?.name || 'User',
       at: new Date().toISOString(),
       prevJudul: prevTask?.judul || '',
-      prevDetail: prevTask?.detail || ''
+      prevDetail: prevTask?.detail || '',
+      newJudul,
+      newDetail
     };
     await updateDoc(doc(db, 'families', familyData.id, 'tasks', editTaskId), {
       judul,
