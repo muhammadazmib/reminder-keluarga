@@ -910,6 +910,51 @@
 <!-- FAB -->
 <button class="fab" id="fab-btn" onclick="fabTap()" style="display:none">+</button>
 
+<!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  // ===== GANTI DENGAN APP ID ONESIGNAL KAMU =====
+  const ONESIGNAL_APP_ID = '4a16f63a-e034-4227-849b-2894a3573788';
+  const ONESIGNAL_REST_KEY = 'os_v2_app_jilpmoxagrbcpbe3fckkgvzxrbehlpxcng6eycnd3jl4dokh6kazgana5vpnifft2xgkjalcgzm52ljygwklkntwo5ykc75qmqchfhq';
+  // ================================================
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: ONESIGNAL_APP_ID,
+      serviceWorkerPath: '/reminder-keluarga/OneSignalSDKWorker.js',
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true,
+    });
+  });
+
+  async function initOneSignal(uid) {
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.login(uid); // set external user ID = Firebase UID
+    });
+  }
+
+  async function sendPushNotification(targetUid, title, message) {
+    try {
+      await fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + ONESIGNAL_REST_KEY
+        },
+        body: JSON.stringify({
+          app_id: ONESIGNAL_APP_ID,
+          include_aliases: { external_id: [targetUid] },
+          target_channel: 'push',
+          headings: { en: title },
+          contents: { en: message },
+          url: 'https://muhammadazmib.github.io/reminder-keluarga/'
+        })
+      });
+    } catch(e) { console.log('push err', e); }
+  }
+</script>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -1120,6 +1165,7 @@ function initApp() {
   document.getElementById('fab-btn').style.display = 'flex';
   checkNotifPermission();
   initTheme();
+  initOneSignal(currentUser.uid);
   switchTab('dashboard');
 }
 
@@ -1667,17 +1713,18 @@ window.copyFamilyCode = function() {
 
 // ===================== NOTIFIKASI TUGAS =====================
 async function sendTaskNotification(targetUid, targetName, judulTask, taskId) {
+  const senderName = currentUser.displayName || userProfile?.name;
+  const msg = `${senderName} menugaskan "${judulTask}" kepada ${targetName}`;
   try {
+    // Simpan ke Firestore (in-app notif)
     const notifRef = collection(db, 'families', familyData.id, 'notifications', targetUid, 'items');
     await addDoc(notifRef, {
-      type: 'task_assigned',
-      message: `${currentUser.displayName || userProfile?.name} menugaskan "${judulTask}" kepada ${targetName}`,
-      taskId,
-      from: currentUser.uid,
-      fromName: currentUser.displayName || userProfile?.name,
-      createdAt: serverTimestamp(),
-      read: false
+      type: 'task_assigned', message: msg, taskId,
+      from: currentUser.uid, fromName: senderName,
+      createdAt: serverTimestamp(), read: false
     });
+    // Kirim push notification via OneSignal
+    await sendPushNotification(targetUid, '📋 Tugas Baru!', msg);
   } catch (e) { console.log('notif err', e); }
 }
 
