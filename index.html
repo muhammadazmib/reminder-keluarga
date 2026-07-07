@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reminder Keluarga">
+<meta name="theme-color" content="#0f0f1a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/check-all.png">
 <title>Catatan & Reminder Keluarga</title>
 <style>
   :root {
@@ -154,20 +158,23 @@
   .tabs {
     display: flex;
     background: var(--surface);
-    padding: 0 16px;
     border-bottom: 1px solid var(--border);
-    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab {
     flex: 1;
-    padding: 12px 8px;
+    min-width: 0;
+    padding: 11px 4px;
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--muted);
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    white-space: nowrap;
   }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
@@ -569,6 +576,36 @@
   .sq-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 12px; font-weight: 600; padding: 10px 6px; cursor: pointer; text-align: center; }
   .sq-btn:active { background: var(--accent); color: #0f0f1a; }
 
+  /* ===== EDIT MODAL ===== */
+  .edit-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 700;
+    align-items: flex-end; justify-content: center;
+  }
+  .edit-overlay.show { display: flex; }
+  .edit-sheet {
+    background: var(--surface); border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px; border-top: 1px solid var(--border);
+    animation: slideUp 0.25s ease; max-height: 90vh;
+    display: flex; flex-direction: column;
+  }
+  .edit-head {
+    padding: 16px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .edit-head-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .edit-body { flex: 1; overflow-y: auto; padding: 16px; }
+  .edit-body label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 5px; }
+  .edit-body label:first-child { margin-top: 0; }
+  .edit-body input, .edit-body textarea, .edit-body select {
+    width: 100%; padding: 11px 14px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 14px; box-sizing: border-box;
+  }
+  .edit-body textarea { min-height: 80px; resize: vertical; }
+  .edit-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-edit { background: rgba(85,136,204,0.15); border: 1px solid rgba(85,136,204,0.4); color: #5588cc; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
   /* ===== RECURRING BADGE ===== */
   .repeat-badge {
     display: inline-flex; align-items: center; gap: 4px;
@@ -691,11 +728,11 @@
   </div>
 
   <div class="tabs">
-    <div class="tab" onclick="switchTab('dashboard')">🏠</div>
-    <div class="tab active" onclick="switchTab('tambah')">+ Tambah</div>
-    <div class="tab" onclick="switchTab('aktif')">Aktif <span id="badge-aktif"></span></div>
+    <div class="tab" onclick="switchTab('dashboard')">🏠 Home</div>
+    <div class="tab active" onclick="switchTab('tambah')">＋ Baru</div>
+    <div class="tab" onclick="switchTab('aktif')">Aktif<span id="badge-aktif"></span></div>
     <div class="tab" onclick="switchTab('kalender')">📅</div>
-    <div class="tab" onclick="switchTab('selesai')">✅</div>
+    <div class="tab" onclick="switchTab('selesai')">✅ Done</div>
   </div>
 
   <!-- PAGE: DASHBOARD -->
@@ -889,6 +926,48 @@
   </div>
 </div>
 
+<!-- EDIT SHEET -->
+<div class="edit-overlay" id="edit-overlay" onclick="closeEdit(event)">
+  <div class="edit-sheet">
+    <div class="edit-head">
+      <div class="edit-head-title">✏️ Edit Tugas</div>
+      <span onclick="closeEdit()" style="cursor:pointer;color:var(--muted);font-size:20px">✕</span>
+    </div>
+    <div class="edit-body">
+      <label>Judul *</label>
+      <input type="text" id="edit-judul" maxlength="100">
+      <label>Detail</label>
+      <textarea id="edit-detail"></textarea>
+      <label>Ditugaskan kepada</label>
+      <select id="edit-assign"></select>
+      <label>Prioritas</label>
+      <select id="edit-priority">
+        <option value="normal">🔵 Normal</option>
+        <option value="important">🟡 Penting</option>
+        <option value="urgent">🔴 Mendesak</option>
+      </select>
+      <label>Waktu Reminder</label>
+      <input type="datetime-local" id="edit-time">
+      <label>Kategori</label>
+      <input type="text" id="edit-kategori" maxlength="30">
+      <label>Ulangi</label>
+      <select id="edit-repeat">
+        <option value="none">🚫 Tidak diulang</option>
+        <option value="daily">📅 Setiap hari</option>
+        <option value="weekly">📅 Setiap minggu</option>
+        <option value="monthly">📅 Setiap bulan</option>
+        <option value="3days">📅 Setiap 3 hari</option>
+        <option value="7days">📅 Setiap 7 hari</option>
+        <option value="14days">📅 Setiap 2 minggu</option>
+      </select>
+    </div>
+    <div class="edit-footer">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">💾 Simpan</button>
+      <button class="btn btn-secondary" onclick="closeEdit()">Batal</button>
+    </div>
+  </div>
+</div>
+
 <!-- NOTIFICATION SHEET -->
 <div class="notif-overlay" id="notif-overlay" onclick="closeNotifSheet(event)">
   <div class="notif-sheet">
@@ -910,27 +989,24 @@
 <!-- FAB -->
 <button class="fab" id="fab-btn" onclick="fabTap()" style="display:none">+</button>
 
-<!-- OneSignal SDK -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-  // ===== GANTI DENGAN APP ID ONESIGNAL KAMU =====
   const ONESIGNAL_APP_ID = '4a16f63a-e034-4227-849b-2894a3573788';
   const ONESIGNAL_REST_KEY = 'os_v2_app_jilpmoxagrbcpbe3fckkgvzxrbehlpxcng6eycnd3jl4dokh6kazgana5vpnifft2xgkjalcgzm52ljygwklkntwo5ykc75qmqchfhq';
-  // ================================================
-
+  // OneSignal init saat halaman pertama dibuka (agar service worker terdaftar)
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: ONESIGNAL_APP_ID,
-      serviceWorkerPath: '/reminder-keluarga/OneSignalSDKWorker.js',
       notifyButton: { enable: false },
       allowLocalhostAsSecureOrigin: true,
     });
   });
 
+  // Dipanggil setelah user login — sambungkan UID ke OneSignal
   async function initOneSignal(uid) {
     OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.login(uid); // set external user ID = Firebase UID
+      try { await OneSignal.login(uid); } catch(e) {}
     });
   }
 
@@ -938,10 +1014,7 @@
     try {
       await fetch('https://onesignal.com/api/v1/notifications', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + ONESIGNAL_REST_KEY
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + ONESIGNAL_REST_KEY },
         body: JSON.stringify({
           app_id: ONESIGNAL_APP_ID,
           include_aliases: { external_id: [targetUid] },
@@ -1496,6 +1569,7 @@ function taskCardHTML(t, isDone) {
       ${!isDone ? `<button class="btn btn-success" onclick="selesaikan('${t.id}')">✅ Selesai</button>` : ''}
       ${!isDone ? `<button class="btn-snooze" onclick="openSnooze('${t.id}')">💤 Tunda</button>` : ''}
       ${isDone ? `<button class="btn btn-outline" onclick="batalSelesai('${t.id}')">↩️ Aktifkan</button>` : ''}
+      ${!isDone ? `<button class="btn btn-edit" onclick="openEdit('${t.id}')">✏️ Edit</button>` : ''}
       <button class="btn-comment" onclick="openComments('${t.id}')">💬</button>
       <button class="btn btn-danger" onclick="hapus('${t.id}')">🗑️ Hapus</button>
     </div>
@@ -1709,6 +1783,80 @@ window.copyFamilyCode = function() {
   const code = familyData?.code || '';
   navigator.clipboard.writeText(code).then(() => showToast('📋 Kode disalin: ' + code));
   document.getElementById('family-sheet').classList.remove('show');
+};
+
+// ===================== EDIT TUGAS =====================
+let editTaskId = null;
+
+window.openEdit = function(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  editTaskId = id;
+
+  document.getElementById('edit-judul').value = t.judul || '';
+  document.getElementById('edit-detail').value = t.detail || '';
+  document.getElementById('edit-priority').value = t.priority || 'important';
+  document.getElementById('edit-kategori').value = t.kategori || '';
+  document.getElementById('edit-repeat').value = t.repeat || 'none';
+
+  // Format datetime-local
+  if (t.reminderTime) {
+    const dt = new Date(t.reminderTime);
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 16);
+    document.getElementById('edit-time').value = local;
+  }
+
+  // Populate assign select
+  const sel = document.getElementById('edit-assign');
+  sel.innerHTML = '<option value="semua">👨‍👩‍👧 Semua anggota</option>';
+  if (familyData?.members) {
+    familyData.members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.uid;
+      opt.textContent = m.uid === currentUser.uid ? `👤 ${m.name} (Saya)` : `👤 ${m.name}`;
+      sel.appendChild(opt);
+    });
+  }
+  sel.value = t.assignTo || 'semua';
+
+  document.getElementById('edit-overlay').classList.add('show');
+};
+
+window.closeEdit = function(e) {
+  if (e && e.target !== document.getElementById('edit-overlay')) return;
+  document.getElementById('edit-overlay').classList.remove('show');
+  editTaskId = null;
+};
+
+window.saveEdit = async function() {
+  const judul = document.getElementById('edit-judul').value.trim();
+  if (!judul) { showToast('⚠️ Judul tidak boleh kosong', 'danger'); return; }
+  const timeVal = document.getElementById('edit-time').value;
+  if (!timeVal) { showToast('⚠️ Pilih waktu reminder', 'danger'); return; }
+
+  const assignVal = document.getElementById('edit-assign').value;
+  const assignName = assignVal === 'semua' ? 'Semua' :
+    (familyData.members.find(m => m.uid === assignVal)?.name || 'Unknown');
+
+  try {
+    await updateDoc(doc(db, 'families', familyData.id, 'tasks', editTaskId), {
+      judul,
+      detail: document.getElementById('edit-detail').value.trim(),
+      priority: document.getElementById('edit-priority').value,
+      kategori: document.getElementById('edit-kategori').value.trim(),
+      reminderTime: new Date(timeVal).toISOString(),
+      assignTo: assignVal,
+      assignToName: assignName,
+      repeat: document.getElementById('edit-repeat').value,
+      notified: false
+    });
+    showToast('✅ Tugas diperbarui!');
+    document.getElementById('edit-overlay').classList.remove('show');
+    editTaskId = null;
+  } catch (e) {
+    showToast('Gagal update: ' + e.message, 'danger');
+  }
 };
 
 // ===================== NOTIFIKASI TUGAS =====================
