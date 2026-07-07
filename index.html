@@ -3080,40 +3080,62 @@ window.closeBioSheet = function(e) {
 };
 
 async function setupBiometric() {
+  const errEl = document.getElementById('bio-sheet-error');
+  const btn = document.getElementById('bio-sheet-btn');
+
   if (!bioSupported()) {
-    document.getElementById('bio-sheet-error').textContent = 'Perangkat ini tidak mendukung biometrik.';
-    document.getElementById('bio-sheet-error').style.display = 'block';
+    errEl.textContent = 'Browser/perangkat ini tidak mendukung biometrik (WebAuthn).';
+    errEl.style.display = 'block';
     return;
   }
-  const btn = document.getElementById('bio-sheet-btn');
-  btn.disabled = true; btn.textContent = '⏳ Menunggu...';
-  document.getElementById('bio-sheet-error').style.display = 'none';
+  const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(() => false);
+  if (!available) {
+    errEl.textContent = 'Tidak ada sensor biometrik yang tersedia di perangkat ini.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Menunggu verifikasi...';
+  errEl.style.display = 'none';
+
   try {
     const uid = currentUser.uid;
     const name = currentUser.displayName || userProfile?.name || 'User';
+    const userIdBytes = new TextEncoder().encode(uid.slice(0, 32)); // max 64 bytes
     const cred = await navigator.credentials.create({
       publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
         rp: { name: 'Kitask', id: 'muhammadazmib.github.io' },
-        user: { id: new TextEncoder().encode(uid), name: currentUser.email || uid, displayName: name },
-        pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
-        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        user: { id: userIdBytes, name: currentUser.email || uid, displayName: name },
+        pubKeyCredParams: [
+          { alg: -7, type: 'public-key' },
+          { alg: -257, type: 'public-key' }
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required',
+          residentKey: 'preferred'
+        },
         timeout: 60000
       }
     });
     localStorage.setItem(bioKey(uid), btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
     document.getElementById('bio-sheet').classList.remove('show');
-    showToast('✅ Biometrik berhasil didaftarkan!');
     setEl('setting-bio-status', 'Sudah didaftarkan ✅');
+    showToast('✅ Biometrik berhasil didaftarkan!');
+    // sukses — reset btn di luar tidak perlu
+    return;
   } catch(e) {
-    const errEl = document.getElementById('bio-sheet-error');
-    errEl.textContent = e.name === 'NotAllowedError'
-      ? 'Pendaftaran dibatalkan atau tidak diizinkan.'
-      : 'Gagal: ' + e.message;
+    let msg = 'Gagal: ' + e.message;
+    if (e.name === 'NotAllowedError') msg = 'Dibatalkan atau tidak diizinkan. Coba lagi.';
+    if (e.name === 'InvalidStateError') msg = 'Kredensial sudah terdaftar di perangkat ini.';
+    if (e.name === 'NotSupportedError') msg = 'Metode biometrik tidak didukung di perangkat ini.';
+    errEl.textContent = msg;
     errEl.style.display = 'block';
   }
   btn.disabled = false;
-  btn.textContent = 'Coba Lagi';
+  btn.textContent = '🔄 Coba Lagi';
 }
 
 async function doBiometric() {
@@ -3159,6 +3181,7 @@ async function showBioBtn() {
 
 window.doBiometric = doBiometric;
 window.setupBiometric = setupBiometric;
+window.showBioBtn = showBioBtn;
 
 window.openPinSetup = function() {
   const existing = localStorage.getItem('app_pin_' + currentUser.uid);
