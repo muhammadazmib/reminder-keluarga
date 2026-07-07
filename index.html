@@ -733,6 +733,7 @@
       <div class="header-user" id="header-user-info">—</div>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="theme-btn" onclick="toggleTheme()" id="btn-theme">🌙</button>
+        <button onclick="showNotifDebug()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🐛</button>
         <button class="notif-btn" onclick="openNotifSheet()" id="notif-btn">🔔<span class="notif-badge" id="notif-badge">0</span></button>
         <button onclick="openPinSetup()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600">🔐 PIN</button>
         <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
@@ -1818,20 +1819,40 @@ function showNotifBanner() {
 window.requestNotifPermission = async function() {
   document.getElementById('notif-banner')?.remove();
   try {
-    // Coba via OneSignal dulu (lebih proper untuk iOS PWA)
     OneSignalDeferred.push(async function(OneSignal) {
       const granted = await OneSignal.Notifications.requestPermission(true);
-      if (granted) {
-        showToast('✅ Notifikasi berhasil diaktifkan!');
-      } else {
-        showToast('⚠️ Izin notifikasi ditolak', 'danger');
-      }
+      showToast(granted ? '✅ Notifikasi aktif!' : '⚠️ Izin ditolak', granted ? 'success' : 'danger');
+      showNotifDebug();
     });
   } catch(e) {
-    // Fallback ke native
     const p = await Notification.requestPermission();
-    if (p === 'granted') showToast('✅ Notifikasi aktif!');
+    showToast(p === 'granted' ? '✅ Notifikasi aktif!' : '⚠️ Ditolak', p === 'granted' ? 'success' : 'danger');
   }
+};
+
+// Debug panel — bantu diagnosa masalah OneSignal
+window.showNotifDebug = async function() {
+  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'tidak didukung';
+  const swSupport = 'serviceWorker' in navigator ? 'Ya' : 'Tidak';
+  let swReg = 'Tidak ada';
+  let osId = 'Belum dapat';
+  let osPerm = '-';
+
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    swReg = regs.length > 0 ? regs.map(r => r.scope).join(', ') : 'Tidak ada';
+  } catch(e) {}
+
+  OneSignalDeferred.push(async function(OneSignal) {
+    try {
+      osPerm = OneSignal.Notifications.permission ? 'Granted' : 'Not granted';
+      const sub = await OneSignal.User.PushSubscription.id;
+      if (sub) osId = sub;
+    } catch(e) { osId = 'Error: ' + e.message; }
+
+    const msg = `📊 DEBUG INFO\n\nNotification.permission: ${perm}\nService Worker: ${swSupport}\nSW terdaftar: ${swReg}\nOneSignal perm: ${osPerm}\nOneSignal ID: ${osId}`;
+    alert(msg);
+  });
 };
 
 // ===================== FAMILY SHEET =====================
