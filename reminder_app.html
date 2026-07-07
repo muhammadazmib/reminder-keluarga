@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Catatan & Reminder Keluarga</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --card: #16213e;
+    --accent: #e2a832;
+    --accent2: #f0c060;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --danger: #e25555;
+    --success: #55c97a;
+    --border: #2a2a4a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+  }
+
+  /* ===== AUTH SCREEN ===== */
+  .auth-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .auth-logo { font-size: 56px; margin-bottom: 12px; }
+  .auth-title { font-size: 24px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; text-align: center; }
+  .auth-card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    border: 1px solid var(--border);
+  }
+  .auth-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .auth-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .auth-tab.active { background: var(--accent); color: #0f0f1a; }
+
+  /* ===== FAMILY SETUP ===== */
+  .family-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .family-option {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .family-option:active { border-color: var(--accent); }
+  .family-option h3 { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .family-option p { font-size: 13px; color: var(--muted); }
+  .family-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    margin: 4px 0 16px;
+    width: 100%;
+  }
+  .family-divider::before, .family-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    background: linear-gradient(135deg, var(--surface), var(--card));
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .header h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .header-user { font-size: 12px; color: var(--muted); }
+  .family-code-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(226,168,50,0.1);
+    border: 1px solid rgba(226,168,50,0.25);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ===== PAGES ===== */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* ===== FORM ===== */
+  .form-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .form-card h2 {
+    font-size: 14px; font-weight: 700; color: var(--accent);
+    margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  label {
+    display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  input, textarea, select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 14px;
+    margin-bottom: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: none; min-height: 80px; }
+  select option { background: var(--surface); }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s; letter-spacing: 0.3px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0f0f1a; }
+  .btn-secondary {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); margin-top: 8px;
+  }
+  .btn-danger { background: var(--danger); color: white; padding: 8px 14px; width: auto; font-size: 13px; border-radius: 8px; }
+  .btn-success { background: var(--success); color: #0f0f1a; padding: 8px 14px; width: auto; font-size: 13px; border-radius: 8px; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; width: auto; font-size: 13px; border-radius: 8px; }
+  .btn-snooze {
+    background: rgba(226,168,50,0.15); border: 1px solid rgba(226,168,50,0.3);
+    color: var(--accent); padding: 8px 14px; width: auto; font-size: 13px;
+    border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  }
+
+  /* ===== TASK CARDS ===== */
+  .task-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px; border: 1px solid var(--border);
+    margin-bottom: 10px; border-left: 3px solid var(--border); transition: all 0.2s;
+  }
+  .task-card.urgent { border-left-color: var(--danger); }
+  .task-card.important { border-left-color: var(--accent); }
+  .task-card.normal { border-left-color: #5588cc; }
+  .task-card.done { opacity: 0.5; }
+
+  .task-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .task-title { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; flex: 1; }
+  .task-title.done-text { text-decoration: line-through; color: var(--muted); }
+
+  .priority-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+  .badge-urgent { background: rgba(226,85,85,0.2); color: var(--danger); }
+  .badge-important { background: rgba(226,168,50,0.2); color: var(--accent); }
+  .badge-normal { background: rgba(85,136,204,0.2); color: #5588cc; }
+
+  .task-note { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+  .task-time { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+  .task-time.overdue { color: var(--danger); }
+  .task-time.soon { color: #f0a030; }
+
+  .task-owner {
+    font-size: 11px; color: var(--muted); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .owner-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
+  }
+
+  .task-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ===== STATS ===== */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat-box { background: var(--card); border-radius: 10px; padding: 12px 8px; text-align: center; border: 1px solid var(--border); }
+  .stat-num { font-size: 22px; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ===== FILTER ===== */
+  .filter-row { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .filter-btn.active { background: var(--accent); color: #0f0f1a; border-color: var(--accent); }
+
+  /* ===== CHECKLIST ===== */
+  .checklist-section { margin: 8px 0 10px; }
+  .checklist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .checklist-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .checklist-progress { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.3s; }
+  .checklist-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .checklist-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border);
+    background: transparent; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 12px;
+  }
+  .check-box.checked { background: var(--success); border-color: var(--success); }
+  .check-text { font-size: 13px; color: var(--text); flex: 1; line-height: 1.4; }
+  .check-text.checked-text { text-decoration: line-through; color: var(--muted); }
+  .check-del { font-size: 16px; color: var(--muted); cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+  .checklist-input-row { display: flex; gap: 6px; margin-top: 8px; }
+  .checklist-input-row input { flex: 1; margin-bottom: 0; padding: 10px 12px; font-size: 13px; }
+  .btn-add-check { background: var(--accent); border: none; border-radius: 10px; color: #0f0f1a; font-size: 20px; font-weight: 700; width: 42px; flex-shrink: 0; cursor: pointer; transition: all 0.15s; }
+  .form-checklist-list { margin-top: 6px; }
+  .form-check-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .form-check-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .form-check-item .del-fc { margin-left: auto; color: var(--muted); cursor: pointer; font-size: 15px; }
+
+  /* ===== SNOOZE SHEET ===== */
+  .snooze-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; align-items: flex-end; justify-content: center; }
+  .snooze-overlay.show { display: flex; }
+  .snooze-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 16px 36px; width: 100%; max-width: 480px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .snooze-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .snooze-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .snooze-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .snooze-btn { background: var(--card); border: 1px solid var(--border); border-radius: 12px; color: var(--text); padding: 14px 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .snooze-btn:active { transform: scale(0.96); background: var(--accent); color: #0f0f1a; }
+  .snooze-btn span { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+  .snooze-cancel { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* ===== FAMILY INFO SHEET ===== */
+  .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; align-items: flex-end; justify-content: center; }
+  .sheet-overlay.show { display: flex; }
+  .bottom-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 16px 40px; width: 100%; max-width: 480px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; }
+  .sheet-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+  .code-display {
+    background: var(--bg); border-radius: 12px; padding: 16px;
+    text-align: center; margin-bottom: 16px; border: 1px dashed var(--accent);
+  }
+  .code-display .code { font-size: 28px; font-weight: 800; color: var(--accent); letter-spacing: 4px; }
+  .code-display p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .member-list { margin-bottom: 16px; }
+  .member-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .member-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #0f0f1a; flex-shrink: 0; }
+  .member-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .member-email { font-size: 11px; color: var(--muted); }
+  .member-you { font-size: 10px; color: var(--accent); font-weight: 700; margin-left: auto; }
+
+  /* ===== MISC ===== */
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; }
+  .fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 20px rgba(226,168,50,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; transition: transform 0.15s; }
+  .fab:active { transform: scale(0.92); }
+  .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--success); color: #0f0f1a; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 999; pointer-events: none; white-space: nowrap; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .loading-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-text { color: var(--danger); font-size: 13px; margin-top: 6px; min-height: 18px; }
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.5); }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="screen-loading">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:13px">Memuat...</div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="screen-auth" style="display:none">
+  <div class="auth-logo">📋</div>
+  <div class="auth-title">Reminder Keluarga</div>
+  <div class="auth-sub">Catat & ingatkan bersama pasangan</div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Masuk</div>
+      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Daftar</div>
+    </div>
+    <div id="form-login">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="email@kamu.com" autocomplete="email">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+      <div class="error-text" id="login-err"></div>
+      <button class="btn btn-primary" onclick="doLogin()" id="btn-login">Masuk</button>
+    </div>
+    <div id="form-register" style="display:none">
+      <label>Nama</label>
+      <input type="text" id="reg-name" placeholder="Nama kamu" autocomplete="name">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="email@kamu.com" autocomplete="email">
+      <label>Password</label>
+      <input type="password" id="reg-pass" placeholder="Min. 6 karakter" autocomplete="new-password" onkeydown="if(event.key==='Enter') doRegister()">
+      <div class="error-text" id="reg-err"></div>
+      <button class="btn btn-primary" onclick="doRegister()" id="btn-register">Buat Akun</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAMILY SETUP SCREEN -->
+<div class="family-screen" id="screen-family" style="display:none">
+  <div style="font-size:48px;margin-bottom:12px">👨‍👩‍👧</div>
+  <div style="font-size:20px;font-weight:800;color:var(--accent);margin-bottom:6px">Buat atau Gabung Keluarga</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:28px;text-align:center">Hubungkan akun dengan pasangan untuk berbagi tugas</div>
+
+  <div style="width:100%">
+    <div class="family-option" onclick="buatKeluarga()">
+      <h3>🏠 Buat Keluarga Baru</h3>
+      <p>Kamu jadi admin, pasangan join pakai kode yang diberikan</p>
+    </div>
+    <div class="family-divider">atau</div>
+    <div style="width:100%">
+      <label>Punya kode dari pasangan?</label>
+      <input type="text" id="inp-join-code" placeholder="Masukkan kode keluarga (cth: BURHAN-2847)" style="text-transform:uppercase;letter-spacing:2px">
+      <button class="btn btn-primary" onclick="joinKeluarga()">🔗 Gabung dengan Kode</button>
+    </div>
+    <button class="btn btn-secondary" onclick="doLogout()">← Keluar</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="screen-app" style="display:none">
+  <div class="header">
+    <div class="header-row">
+      <h1>📋 Reminder Keluarga</h1>
+      <button class="btn-logout" onclick="doLogout()">Keluar</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-user" id="header-user-info">—</div>
+      <div class="family-code-badge" onclick="openFamilySheet()" id="family-badge">👨‍👩‍👧 —</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tambah')">+ Tambah</div>
+    <div class="tab" onclick="switchTab('aktif')">Aktif <span id="badge-aktif"></span></div>
+    <div class="tab" onclick="switchTab('selesai')">Selesai</div>
+  </div>
+
+  <!-- PAGE: TAMBAH -->
+  <div class="page active" id="page-tambah">
+    <div class="form-card">
+      <h2>📝 Tugas Baru</h2>
+      <label>Judul Tugas / Perintah *</label>
+      <input type="text" id="inp-judul" placeholder="Contoh: Beli susu, bayar listrik..." maxlength="100">
+      <label>Detail / Catatan</label>
+      <textarea id="inp-detail" placeholder="Tambah detail, instruksi, atau konteks..."></textarea>
+      <label>Ditugaskan kepada</label>
+      <select id="inp-assign">
+        <option value="semua">👨‍👩‍👧 Semua anggota</option>
+      </select>
+      <label>Prioritas</label>
+      <select id="inp-priority">
+        <option value="normal">🔵 Normal</option>
+        <option value="important" selected>🟡 Penting</option>
+        <option value="urgent">🔴 Mendesak</option>
+      </select>
+      <label>Waktu Reminder</label>
+      <input type="datetime-local" id="inp-time">
+      <label>Kategori</label>
+      <input type="text" id="inp-kategori" placeholder="Kantor, Rumah, Belanja..." maxlength="30">
+      <label>Sub-task / Checklist <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label>
+      <div class="checklist-input-row">
+        <input type="text" id="inp-checklist" placeholder="Tambah langkah..." maxlength="100" onkeydown="if(event.key==='Enter'){tambahCheckItem();event.preventDefault()}">
+        <button class="btn-add-check" onclick="tambahCheckItem()">+</button>
+      </div>
+      <div class="form-checklist-list" id="form-checklist-list"></div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="tambahTugas()">💾 Simpan & Set Reminder</button>
+    </div>
+  </div>
+
+  <!-- PAGE: AKTIF -->
+  <div class="page" id="page-aktif">
+    <div class="stats">
+      <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-urgent" style="color:var(--danger)">0</div><div class="stat-label">Mendesak</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-today" style="color:#55c97a">0</div><div class="stat-label">Hari Ini</div></div>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('semua',this)">Semua</button>
+      <button class="filter-btn" onclick="setFilter('saya',this)">👤 Saya</button>
+      <button class="filter-btn" onclick="setFilter('urgent',this)">🔴 Mendesak</button>
+      <button class="filter-btn" onclick="setFilter('important',this)">🟡 Penting</button>
+    </div>
+    <div id="list-aktif"></div>
+  </div>
+
+  <!-- PAGE: SELESAI -->
+  <div class="page" id="page-selesai">
+    <div id="list-selesai"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SNOOZE SHEET -->
+<div class="snooze-overlay" id="snooze-overlay" onclick="closeSnooze(event)">
+  <div class="snooze-sheet">
+    <div class="snooze-title">💤 Tunda Reminder</div>
+    <div class="snooze-sub" id="snooze-task-name">—</div>
+    <div class="snooze-options">
+      <button class="snooze-btn" onclick="doSnooze(10)">10 menit<span>sebentar lagi</span></button>
+      <button class="snooze-btn" onclick="doSnooze(30)">30 menit<span>istirahat dulu</span></button>
+      <button class="snooze-btn" onclick="doSnooze(60)">1 jam<span>nanti balik</span></button>
+      <button class="snooze-btn" onclick="doSnooze(180)">3 jam<span>nanti sore</span></button>
+      <button class="snooze-btn" onclick="doSnooze(480)">Besok pagi<span>jam 08:00</span></button>
+      <button class="snooze-btn" onclick="doSnooze('custom')">Pilih waktu<span>custom</span></button>
+    </div>
+    <button class="snooze-cancel" onclick="closeSnooze()">Batal</button>
+  </div>
+</div>
+
+<!-- FAMILY SHEET -->
+<div class="sheet-overlay" id="family-sheet" onclick="closeFamilySheet(event)">
+  <div class="bottom-sheet">
+    <div class="sheet-title">👨‍👩‍👧 Info Keluarga</div>
+    <div class="code-display">
+      <div class="code" id="display-family-code">—</div>
+      <p>Bagikan kode ini ke pasangan agar bisa bergabung</p>
+    </div>
+    <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Anggota</div>
+    <div class="member-list" id="member-list"></div>
+    <button class="btn btn-primary" onclick="copyFamilyCode()" style="margin-top:8px">📋 Salin Kode</button>
+    <button class="snooze-cancel" style="margin-top:8px" onclick="closeFamilySheet()">Tutup</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" onclick="fabTap()" style="display:none">+</button>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, serverTimestamp, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ===================== FIREBASE CONFIG =====================
+const firebaseConfig = {
+  apiKey: "AIzaSyDcaVHx785NMLj2IRd8L9CoMrVaf8ZDGWk",
+  authDomain: "reminderapps-48766.firebaseapp.com",
+  projectId: "reminderapps-48766",
+  storageBucket: "reminderapps-48766.firebasestorage.app",
+  messagingSenderId: "226752043616",
+  appId: "1:226752043616:web:2fc842c376b0e114ab4105"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ===================== STATE =====================
+let currentUser = null;
+let userProfile = null;
+let familyData = null;
+let tasks = [];
+let unsubTasks = null;
+let currentFilter = 'semua';
+let formChecklist = [];
+let snoozeTargetId = null;
+let checkInterval = null;
+
+// ===================== AUTH STATE =====================
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    await loadUserProfile();
+  } else {
+    currentUser = null;
+    userProfile = null;
+    familyData = null;
+    if (unsubTasks) { unsubTasks(); unsubTasks = null; }
+    showScreen('auth');
+  }
+});
+
+async function loadUserProfile() {
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    if (snap.exists()) {
+      userProfile = snap.data();
+      if (userProfile.familyId) {
+        await loadFamily();
+      } else {
+        showScreen('family');
+      }
+    } else {
+      showScreen('family');
+    }
+  } catch (e) {
+    showToast('Error memuat profil: ' + e.message, 'danger');
+    showScreen('auth');
+  }
+}
+
+async function loadFamily() {
+  try {
+    const snap = await getDoc(doc(db, 'families', userProfile.familyId));
+    if (snap.exists()) {
+      familyData = { id: snap.id, ...snap.data() };
+      showScreen('app');
+      initApp();
+    } else {
+      showScreen('family');
+    }
+  } catch (e) {
+    showToast('Error memuat keluarga', 'danger');
+    showScreen('family');
+  }
+}
+
+// ===================== AUTH ACTIONS =====================
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn = document.getElementById('btn-login');
+  if (!email || !pass) { errEl.textContent = 'Email dan password wajib diisi'; return; }
+  btn.textContent = 'Memuat...'; btn.disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    errEl.textContent = '';
+  } catch (e) {
+    errEl.textContent = e.code === 'auth/invalid-credential' ? 'Email atau password salah' : e.message;
+  }
+  btn.textContent = 'Masuk'; btn.disabled = false;
+};
+
+window.doRegister = async function() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const errEl = document.getElementById('reg-err');
+  const btn = document.getElementById('btn-register');
+  if (!name || !email || !pass) { errEl.textContent = 'Semua field wajib diisi'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Password minimal 6 karakter'; return; }
+  btn.textContent = 'Mendaftar...'; btn.disabled = true;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      name, email, createdAt: serverTimestamp(), familyId: null
+    });
+    errEl.textContent = '';
+  } catch (e) {
+    errEl.textContent = e.code === 'auth/email-already-in-use' ? 'Email sudah terdaftar' : e.message;
+  }
+  btn.textContent = 'Buat Akun'; btn.disabled = false;
+};
+
+window.doLogout = async function() {
+  if (unsubTasks) { unsubTasks(); unsubTasks = null; }
+  if (checkInterval) { clearInterval(checkInterval); }
+  await signOut(auth);
+};
+
+// ===================== FAMILY =====================
+window.buatKeluarga = async function() {
+  const code = generateCode();
+  try {
+    const ref = await addDoc(collection(db, 'families'), {
+      code,
+      createdBy: currentUser.uid,
+      createdAt: serverTimestamp(),
+      members: [{ uid: currentUser.uid, name: currentUser.displayName || userProfile?.name, email: currentUser.email }]
+    });
+    await setDoc(doc(db, 'users', currentUser.uid), { familyId: ref.id }, { merge: true });
+    userProfile = { ...userProfile, familyId: ref.id };
+    await loadFamily();
+    showToast('🏠 Keluarga dibuat! Kode: ' + code);
+  } catch (e) {
+    showToast('Gagal: ' + e.message, 'danger');
+  }
+};
+
+window.joinKeluarga = async function() {
+  const code = document.getElementById('inp-join-code').value.trim().toUpperCase();
+  if (!code) { showToast('Masukkan kode keluarga', 'danger'); return; }
+  try {
+    const q = query(collection(db, 'families'), where('code', '==', code));
+    const snap = await getDocs(q);
+    if (snap.empty) { showToast('Kode tidak ditemukan', 'danger'); return; }
+    const famDoc = snap.docs[0];
+    const famData = famDoc.data();
+    const already = famData.members.some(m => m.uid === currentUser.uid);
+    if (!already) {
+      const newMembers = [...famData.members, {
+        uid: currentUser.uid,
+        name: currentUser.displayName || userProfile?.name,
+        email: currentUser.email
+      }];
+      await updateDoc(doc(db, 'families', famDoc.id), { members: newMembers });
+    }
+    await setDoc(doc(db, 'users', currentUser.uid), { familyId: famDoc.id }, { merge: true });
+    userProfile = { ...userProfile, familyId: famDoc.id };
+    await loadFamily();
+    showToast('✅ Berhasil bergabung!');
+  } catch (e) {
+    showToast('Gagal: ' + e.message, 'danger');
+  }
+};
+
+function generateCode() {
+  const names = ['SAYANG','RUMAH','CINTA','BAHAGIA','KELUARGA'];
+  const pick = names[Math.floor(Math.random() * names.length)];
+  return pick + '-' + Math.floor(1000 + Math.random() * 9000);
+}
+
+// ===================== APP INIT =====================
+function initApp() {
+  updateHeaderInfo();
+  populateAssignSelect();
+  setDefaultTime();
+  listenTasks();
+  startReminderCheck();
+  document.getElementById('fab-btn').style.display = 'flex';
+  checkNotifPermission();
+}
+
+function updateHeaderInfo() {
+  const name = currentUser.displayName || userProfile?.name || 'User';
+  document.getElementById('header-user-info').textContent = `👤 ${name}`;
+  document.getElementById('family-badge').textContent = `👨‍👩‍👧 ${familyData?.code || '—'}`;
+  document.getElementById('display-family-code').textContent = familyData?.code || '—';
+  renderMemberList();
+}
+
+function populateAssignSelect() {
+  const sel = document.getElementById('inp-assign');
+  sel.innerHTML = '<option value="semua">👨‍👩‍👧 Semua anggota</option>';
+  if (familyData?.members) {
+    familyData.members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.uid;
+      opt.textContent = m.uid === currentUser.uid ? `👤 ${m.name} (Saya)` : `👤 ${m.name}`;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+// ===================== TASKS (FIRESTORE) =====================
+function listenTasks() {
+  if (unsubTasks) unsubTasks();
+  const q = query(
+    collection(db, 'families', familyData.id, 'tasks'),
+    orderBy('createdAt', 'desc')
+  );
+  unsubTasks = onSnapshot(q, snap => {
+    tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAll();
+    checkReminders();
+  });
+}
+
+window.tambahTugas = async function() {
+  const judul = document.getElementById('inp-judul').value.trim();
+  if (!judul) { showToast('⚠️ Judul tidak boleh kosong', 'danger'); return; }
+  const timeVal = document.getElementById('inp-time').value;
+  if (!timeVal) { showToast('⚠️ Pilih waktu reminder', 'danger'); return; }
+  const reminderTime = new Date(timeVal);
+  if (reminderTime <= new Date()) { showToast('⚠️ Waktu harus di masa depan', 'danger'); return; }
+
+  const assignVal = document.getElementById('inp-assign').value;
+  const assignName = assignVal === 'semua' ? 'Semua' :
+    (familyData.members.find(m => m.uid === assignVal)?.name || 'Unknown');
+
+  const task = {
+    judul,
+    detail: document.getElementById('inp-detail').value.trim(),
+    priority: document.getElementById('inp-priority').value,
+    kategori: document.getElementById('inp-kategori').value.trim(),
+    reminderTime: reminderTime.toISOString(),
+    createdAt: serverTimestamp(),
+    done: false,
+    notified: false,
+    checklist: formChecklist.map(c => ({ ...c, done: false })),
+    createdBy: currentUser.uid,
+    createdByName: currentUser.displayName || userProfile?.name,
+    assignTo: assignVal,
+    assignToName: assignName
+  };
+
+  try {
+    await addDoc(collection(db, 'families', familyData.id, 'tasks'), task);
+    showToast('✅ Tugas tersimpan!');
+    document.getElementById('inp-judul').value = '';
+    document.getElementById('inp-detail').value = '';
+    document.getElementById('inp-kategori').value = '';
+    document.getElementById('inp-priority').value = 'important';
+    document.getElementById('inp-assign').value = 'semua';
+    document.getElementById('inp-checklist').value = '';
+    formChecklist = [];
+    renderFormChecklist();
+    setDefaultTime();
+    switchTab('aktif');
+  } catch (e) {
+    showToast('Gagal simpan: ' + e.message, 'danger');
+  }
+};
+
+window.selesaikan = async function(id) {
+  try {
+    await updateDoc(doc(db, 'families', familyData.id, 'tasks', id), {
+      done: true, doneAt: new Date().toISOString(), doneBy: currentUser.uid,
+      doneByName: currentUser.displayName || userProfile?.name
+    });
+    showToast('✅ Tugas selesai!');
+  } catch (e) { showToast('Gagal: ' + e.message, 'danger'); }
+};
+
+window.batalSelesai = async function(id) {
+  try {
+    await updateDoc(doc(db, 'families', familyData.id, 'tasks', id), { done: false, notified: false });
+    showToast('↩️ Tugas diaktifkan kembali');
+  } catch (e) { showToast('Gagal: ' + e.message, 'danger'); }
+};
+
+window.hapus = async function(id) {
+  if (!confirm('Hapus tugas ini?')) return;
+  try {
+    await deleteDoc(doc(db, 'families', familyData.id, 'tasks', id));
+    showToast('🗑️ Tugas dihapus');
+  } catch (e) { showToast('Gagal: ' + e.message, 'danger'); }
+};
+
+window.toggleCheck = async function(taskId, checkId) {
+  const t = tasks.find(t => t.id === taskId);
+  if (!t || !t.checklist) return;
+  const updated = t.checklist.map(c => c.id === checkId ? { ...c, done: !c.done } : c);
+  try {
+    await updateDoc(doc(db, 'families', familyData.id, 'tasks', taskId), { checklist: updated });
+  } catch (e) { showToast('Gagal update', 'danger'); }
+};
+
+window.hapusCheck = async function(taskId, checkId) {
+  const t = tasks.find(t => t.id === taskId);
+  if (!t || !t.checklist) return;
+  const updated = t.checklist.filter(c => c.id !== checkId);
+  try {
+    await updateDoc(doc(db, 'families', familyData.id, 'tasks', taskId), { checklist: updated });
+  } catch (e) { showToast('Gagal hapus item', 'danger'); }
+};
+
+// ===================== SNOOZE =====================
+window.openSnooze = function(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  snoozeTargetId = id;
+  document.getElementById('snooze-task-name').textContent = t.judul;
+  document.getElementById('snooze-overlay').classList.add('show');
+};
+
+window.closeSnooze = function(e) {
+  if (e && e.target !== document.getElementById('snooze-overlay')) return;
+  document.getElementById('snooze-overlay').classList.remove('show');
+  snoozeTargetId = null;
+};
+
+window.doSnooze = async function(minutes) {
+  const t = tasks.find(t => t.id === snoozeTargetId);
+  if (!t) return;
+  let newTime;
+  if (minutes === 'custom') {
+    const val = prompt('Tunda sampai kapan?\nFormat: YYYY-MM-DDTHH:MM');
+    if (!val) return;
+    newTime = new Date(val);
+    if (isNaN(newTime)) { showToast('Format tidak valid', 'danger'); return; }
+  } else if (minutes === 480) {
+    newTime = new Date(); newTime.setDate(newTime.getDate() + 1); newTime.setHours(8, 0, 0, 0);
+  } else {
+    newTime = new Date(Date.now() + minutes * 60000);
+  }
+  try {
+    await updateDoc(doc(db, 'families', familyData.id, 'tasks', snoozeTargetId), {
+      reminderTime: newTime.toISOString(), notified: false
+    });
+    document.getElementById('snooze-overlay').classList.remove('show');
+    snoozeTargetId = null;
+    showToast(`💤 Ditunda ke ${formatDate(newTime)} ${formatTime(newTime)}`);
+  } catch (e) { showToast('Gagal snooze', 'danger'); }
+};
+
+// ===================== RENDER =====================
+function renderAll() {
+  renderAktif();
+  renderSelesai();
+  updateStats();
+  updateBadge();
+}
+
+function renderAktif() {
+  const container = document.getElementById('list-aktif');
+  let list = tasks.filter(t => !t.done);
+  if (currentFilter === 'saya') {
+    list = list.filter(t => t.assignTo === currentUser.uid || t.assignTo === 'semua' || t.createdBy === currentUser.uid);
+  } else if (currentFilter === 'urgent') {
+    list = list.filter(t => t.priority === 'urgent');
+  } else if (currentFilter === 'important') {
+    list = list.filter(t => t.priority === 'important');
+  }
+  list.sort((a, b) => {
+    const pOrder = { urgent: 0, important: 1, normal: 2 };
+    if (pOrder[a.priority] !== pOrder[b.priority]) return pOrder[a.priority] - pOrder[b.priority];
+    return new Date(a.reminderTime) - new Date(b.reminderTime);
+  });
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div><div class="empty-title">Tidak ada tugas aktif</div><div class="empty-sub">Tambah tugas baru via tombol + di bawah</div></div>`;
+    return;
+  }
+  container.innerHTML = list.map(t => taskCardHTML(t, false)).join('');
+}
+
+function renderSelesai() {
+  const container = document.getElementById('list-selesai');
+  const list = tasks.filter(t => t.done).sort((a, b) => new Date(b.doneAt || 0) - new Date(a.doneAt || 0));
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Belum ada yang selesai</div></div>`;
+    return;
+  }
+  container.innerHTML = list.map(t => taskCardHTML(t, true)).join('');
+}
+
+function taskCardHTML(t, isDone) {
+  const now = new Date();
+  const reminderDt = new Date(t.reminderTime);
+  const diffMs = reminderDt - now;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMs / 3600000);
+  let timeLabel = '', timeClass = '';
+  if (!isDone) {
+    if (diffMs < 0) { timeLabel = `⏰ ${formatDate(reminderDt)} (terlambat ${formatDiff(-diffMs)})`; timeClass = 'overdue'; }
+    else if (diffMin < 60) { timeLabel = `⚡ ${diffMin} menit lagi`; timeClass = 'soon'; }
+    else if (diffHour < 24) { timeLabel = `🕐 ${diffHour} jam lagi — ${formatTime(reminderDt)}`; timeClass = 'soon'; }
+    else { timeLabel = `📅 ${formatDate(reminderDt)} — ${formatTime(reminderDt)}`; }
+  } else {
+    timeLabel = `✅ Selesai oleh ${t.doneByName || '?'} — ${t.doneAt ? formatDate(new Date(t.doneAt)) : '-'}`;
+  }
+
+  const badgeMap = { urgent: 'badge-urgent', important: 'badge-important', normal: 'badge-normal' };
+  const badgeLabel = { urgent: '🔴 Mendesak', important: '🟡 Penting', normal: '🔵 Normal' };
+  const isMine = t.createdBy === currentUser?.uid;
+  const ownerColor = isMine ? 'var(--accent)' : '#5588cc';
+
+  const cl = t.checklist || [];
+  const clDone = cl.filter(c => c.done).length;
+  const clTotal = cl.length;
+  const clPct = clTotal > 0 ? Math.round(clDone / clTotal * 100) : 0;
+  const checklistHTML = clTotal > 0 ? `
+    <div class="checklist-section">
+      <div class="checklist-header">
+        <span class="checklist-label">✅ Sub-task</span>
+        <span class="checklist-progress">${clDone}/${clTotal} (${clPct}%)</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${clPct}%"></div></div>
+      ${cl.map(c => `
+        <div class="checklist-item">
+          <div class="check-box ${c.done ? 'checked' : ''}" onclick="toggleCheck('${t.id}','${c.id}')">${c.done ? '✓' : ''}</div>
+          <div class="check-text ${c.done ? 'checked-text' : ''}">${escHtml(c.text)}</div>
+          ${!isDone ? `<span class="check-del" onclick="hapusCheck('${t.id}','${c.id}')">×</span>` : ''}
+        </div>`).join('')}
+    </div>` : '';
+
+  const assignLabel = t.assignTo === 'semua' ? '👨‍👩‍👧 Semua' : `👤 ${t.assignToName || '?'}`;
+
+  return `<div class="task-card ${t.priority} ${isDone ? 'done' : ''}">
+    <div class="task-head">
+      <div class="task-title ${isDone ? 'done-text' : ''}">${escHtml(t.judul)}</div>
+      <div class="priority-badge ${badgeMap[t.priority]}">${badgeLabel[t.priority]}</div>
+    </div>
+    <div class="task-owner">
+      <div class="owner-dot" style="background:${ownerColor}"></div>
+      Oleh ${t.createdByName || '?'} · ${assignLabel}
+      ${t.kategori ? `· 📁 ${escHtml(t.kategori)}` : ''}
+    </div>
+    ${t.detail ? `<div class="task-note">${escHtml(t.detail)}</div>` : ''}
+    <div class="task-time ${timeClass}">${timeLabel}</div>
+    ${checklistHTML}
+    <div class="task-actions">
+      ${!isDone ? `<button class="btn btn-success" onclick="selesaikan('${t.id}')">✅ Selesai</button>` : ''}
+      ${!isDone ? `<button class="btn-snooze" onclick="openSnooze('${t.id}')">💤 Tunda</button>` : ''}
+      ${isDone ? `<button class="btn btn-outline" onclick="batalSelesai('${t.id}')">↩️ Aktifkan</button>` : ''}
+      <button class="btn btn-danger" onclick="hapus('${t.id}')">🗑️ Hapus</button>
+    </div>
+  </div>`;
+}
+
+function updateStats() {
+  const aktif = tasks.filter(t => !t.done);
+  const todayStr = new Date().toDateString();
+  document.getElementById('stat-total').textContent = aktif.length;
+  document.getElementById('stat-urgent').textContent = aktif.filter(t => t.priority === 'urgent').length;
+  document.getElementById('stat-today').textContent = aktif.filter(t => new Date(t.reminderTime).toDateString() === todayStr).length;
+}
+
+function updateBadge() {
+  const count = tasks.filter(t => !t.done).length;
+  document.getElementById('badge-aktif').textContent = count > 0 ? `(${count})` : '';
+}
+
+function renderMemberList() {
+  const el = document.getElementById('member-list');
+  if (!familyData?.members) { el.innerHTML = ''; return; }
+  el.innerHTML = familyData.members.map(m => {
+    const initial = (m.name || '?')[0].toUpperCase();
+    const isMe = m.uid === currentUser?.uid;
+    return `<div class="member-item">
+      <div class="member-avatar">${initial}</div>
+      <div>
+        <div class="member-name">${escHtml(m.name || '?')}</div>
+        <div class="member-email">${escHtml(m.email || '')}</div>
+      </div>
+      ${isMe ? '<div class="member-you">SAYA</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ===================== CHECKLIST FORM =====================
+window.tambahCheckItem = function() {
+  const inp = document.getElementById('inp-checklist');
+  const text = inp.value.trim();
+  if (!text) return;
+  formChecklist.push({ id: 'c' + Date.now(), text });
+  inp.value = '';
+  renderFormChecklist();
+  inp.focus();
+};
+
+window.hapusFormCheck = function(id) {
+  formChecklist = formChecklist.filter(c => c.id !== id);
+  renderFormChecklist();
+};
+
+function renderFormChecklist() {
+  const el = document.getElementById('form-checklist-list');
+  if (!el) return;
+  el.innerHTML = formChecklist.map(c => `
+    <div class="form-check-item">
+      <div class="dot"></div>
+      <span>${escHtml(c.text)}</span>
+      <span class="del-fc" onclick="hapusFormCheck('${c.id}')">×</span>
+    </div>`).join('');
+}
+
+// ===================== REMINDER CHECK =====================
+function startReminderCheck() {
+  checkInterval = setInterval(checkReminders, 30000);
+}
+
+function checkReminders() {
+  if (!tasks.length) return;
+  const now = new Date();
+  tasks.forEach(t => {
+    if (t.done || t.notified) return;
+    if (new Date(t.reminderTime) <= now) {
+      fireNotif(t);
+      updateDoc(doc(db, 'families', familyData.id, 'tasks', t.id), { notified: true }).catch(() => {});
+    }
+  });
+}
+
+function fireNotif(task) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(`⏰ ${task.judul}`, {
+      body: task.detail || `Dari: ${task.createdByName}`,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📋</text></svg>'
+    });
+  }
+  showToast(`⏰ Reminder: ${task.judul}`, 'urgent', 5000);
+}
+
+function checkNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+// ===================== FAMILY SHEET =====================
+window.openFamilySheet = function() {
+  document.getElementById('family-sheet').classList.add('show');
+};
+window.closeFamilySheet = function(e) {
+  if (e && e.target !== document.getElementById('family-sheet')) return;
+  document.getElementById('family-sheet').classList.remove('show');
+};
+window.copyFamilyCode = function() {
+  const code = familyData?.code || '';
+  navigator.clipboard.writeText(code).then(() => showToast('📋 Kode disalin: ' + code));
+  document.getElementById('family-sheet').classList.remove('show');
+};
+
+// ===================== UI HELPERS =====================
+window.switchTab = function(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['tambah','aktif','selesai'][i] === tab);
+  });
+  document.querySelectorAll('.page').forEach((p, i) => {
+    p.classList.toggle('active', ['page-tambah','page-aktif','page-selesai'][i] === `page-${tab}`);
+  });
+};
+
+window.switchAuthTab = function(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+};
+
+window.setFilter = function(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAktif();
+};
+
+window.fabTap = function() { switchTab('tambah'); document.getElementById('inp-judul').focus(); };
+
+function showScreen(name) {
+  document.getElementById('screen-loading').style.display = 'none';
+  document.getElementById('screen-auth').style.display = name === 'auth' ? 'flex' : 'none';
+  document.getElementById('screen-family').style.display = name === 'family' ? 'flex' : 'none';
+  document.getElementById('screen-app').style.display = name === 'app' ? 'block' : 'none';
+  document.getElementById('fab-btn').style.display = name === 'app' ? 'flex' : 'none';
+}
+
+function setDefaultTime() {
+  const now = new Date(); now.setHours(now.getHours() + 1); now.setMinutes(0, 0, 0);
+  const el = document.getElementById('inp-time');
+  if (el) el.value = toLocalISO(now);
+}
+
+function toLocalISO(date) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatDate(d) {
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const days = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+function formatTime(d) { return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); }
+function formatDiff(ms) {
+  const min = Math.floor(ms / 60000);
+  if (min < 60) return `${min} menit`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} jam`;
+  return `${Math.floor(hr/24)} hari`;
+}
+function escHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+function showToast(msg, type = 'success', dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'danger' ? 'var(--danger)' : type === 'urgent' ? '#e25555' : 'var(--success)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+</script>
+
+</body>
+</html>
